@@ -171,6 +171,36 @@ spec:
             - name: socket-dir
               mountPath: /run/topolvm
 
+        {{ if .Values.controller.attachRequired.enabled }}
+        - name: csi-attacher
+          {{- if .Values.image.csi.csiAttacher }}
+          image: {{ .Values.image.csi.csiAttacher }}
+          {{- else }}
+          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          {{- end }}
+          {{- with .Values.image.pullPolicy }}
+          imagePullPolicy: {{ . }}
+          {{- end }}
+          {{- with .Values.resources.csi_attacher }}
+          resources: {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.env.csi_attacher }}
+          env: {{ toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+            - "--v=5"
+            - "--reconcile-sync=30m"
+            - "--timeout=45m"
+            - --csi-address=/run/topolvm/csi-topolvm.sock
+            {{ if .Values.controller.leaderElection.enabled }}
+            - --leader-election
+            - --leader-election-namespace={{ .Release.Namespace }}
+            {{ end }}
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /run/topolvm
+        {{ end }}
+
         - name: csi-resizer
           {{- if .Values.image.csi.csiResizer }}
           image: {{ .Values.image.csi.csiResizer }}

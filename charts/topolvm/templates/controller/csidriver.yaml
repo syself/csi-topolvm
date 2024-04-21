@@ -8,7 +8,7 @@ spec:
   {{- with .Values.controller.storageCapacityTracking.enabled }}
   storageCapacity: true
   {{- end }}
-  attachRequired: false
+  attachRequired: {{ .Values.controller.attachRequired.enabled }}
   podInfoOnMount: true
   volumeLifecycleModes:
     - Persistent
