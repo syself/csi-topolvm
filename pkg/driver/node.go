@@ -1,7 +1,7 @@
 package driver
 
 import (
-	internalDriver "github.com/topolvm/topolvm/internal/driver"
+	internalDriver "github.com/syself/csi-topolvm/internal/driver"
 )
 
 var NewNodeServer = internalDriver.NewNodeServer

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/topolvm/topolvm"
+	topolvm "github.com/syself/csi-topolvm"
 	corev1 "k8s.io/api/core/v1"
 )
 

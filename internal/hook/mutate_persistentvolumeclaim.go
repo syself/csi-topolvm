@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/topolvm/topolvm"
-	"github.com/topolvm/topolvm/internal/getter"
+	topolvm "github.com/syself/csi-topolvm"
+	"github.com/syself/csi-topolvm/internal/getter"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

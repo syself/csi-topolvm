@@ -8,9 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
-	topolvmlegacyv1 "github.com/topolvm/topolvm/api/legacy/v1"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	clientwrapper "github.com/topolvm/topolvm/internal/client"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	clientwrapper "github.com/syself/csi-topolvm/internal/client"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -108,7 +107,6 @@ func createK8sClient() client.Client {
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(topolvmv1.AddToScheme(scheme))
-	utilruntime.Must(topolvmlegacyv1.AddToScheme(scheme))
 	k8sClient, err := client.New(config, client.Options{Scheme: scheme})
 	Expect(err).ShouldNot(HaveOccurred())
 	return clientwrapper.NewWrappedClient(k8sClient)

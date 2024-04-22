@@ -6,7 +6,7 @@ domain: io
 layout:
 - go.kubebuilder.io/v4
 projectName: topolvm
-repo: github.com/topolvm/topolvm
+repo: github.com/syself/csi-topolvm
 resources:
 - api:
     crdVersion: v1
@@ -14,7 +14,7 @@ resources:
   domain: io
   group: topolvm
   kind: LogicalVolume
-  path: github.com/topolvm/topolvm/api/v1
+  path: github.com/syself/csi-topolvm/api/v1
   version: v1
 - controller: true
   group: core

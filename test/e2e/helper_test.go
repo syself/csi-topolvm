@@ -15,8 +15,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

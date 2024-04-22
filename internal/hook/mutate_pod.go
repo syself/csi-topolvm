@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/topolvm/topolvm"
-	"github.com/topolvm/topolvm/internal/getter"
+	topolvm "github.com/syself/csi-topolvm"
+	"github.com/syself/csi-topolvm/internal/getter"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -208,7 +208,7 @@ func (m *podMutator) pvcCapacity(
 		return "", 0, true, nil
 	}
 
-	var requested = topolvm.DefaultSize
+	requested := topolvm.DefaultSize
 	if req, ok := pvc.Spec.Resources.Requests[corev1.ResourceStorage]; ok {
 		// Only use topolvm.DefaultSize if requested size is not available.
 		// If it is available from spec, use that instead.
@@ -244,7 +244,7 @@ func (m *podMutator) ephemeralCapacity(
 		return "", 0, nil
 	}
 
-	var requested = topolvm.DefaultSize
+	requested := topolvm.DefaultSize
 	if req, ok := volumeClaimTemplate.Spec.Resources.Requests[corev1.ResourceStorage]; ok {
 		// Only use topolvm.DefaultSize if requested size is not available.
 		// If it is available from spec, use that instead.

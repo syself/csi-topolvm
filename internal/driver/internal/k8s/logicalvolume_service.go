@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/topolvm/topolvm"
-	topolvmlegacyv1 "github.com/topolvm/topolvm/api/legacy/v1"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	clientwrapper "github.com/topolvm/topolvm/internal/client"
-	"github.com/topolvm/topolvm/internal/getter"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	clientwrapper "github.com/syself/csi-topolvm/internal/client"
+	"github.com/syself/csi-topolvm/internal/getter"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -39,9 +38,7 @@ const (
 	indexFieldVolumeID = "status.volumeID"
 )
 
-var (
-	logger = ctrl.Log.WithName("LogicalVolume")
-)
+var logger = ctrl.Log.WithName("LogicalVolume")
 
 type retryMissingGetter struct {
 	cacheReader client.Reader
@@ -124,20 +121,11 @@ func (v *volumeGetter) Get(ctx context.Context, volumeID string) (*topolvmv1.Log
 // NewLogicalVolumeService returns LogicalVolumeService.
 func NewLogicalVolumeService(mgr manager.Manager) (*LogicalVolumeService, error) {
 	ctx := context.Background()
-	if topolvm.UseLegacy() {
-		err := mgr.GetFieldIndexer().IndexField(ctx, &topolvmlegacyv1.LogicalVolume{}, indexFieldVolumeID, func(o client.Object) []string {
-			return []string{o.(*topolvmlegacyv1.LogicalVolume).Status.VolumeID}
-		})
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		err := mgr.GetFieldIndexer().IndexField(ctx, &topolvmv1.LogicalVolume{}, indexFieldVolumeID, func(o client.Object) []string {
-			return []string{o.(*topolvmv1.LogicalVolume).Status.VolumeID}
-		})
-		if err != nil {
-			return nil, err
-		}
+	err := mgr.GetFieldIndexer().IndexField(ctx, &topolvmv1.LogicalVolume{}, indexFieldVolumeID, func(o client.Object) []string {
+		return []string{o.(*topolvmv1.LogicalVolume).Status.VolumeID}
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	client := clientwrapper.NewWrappedClient(mgr.GetClient())
@@ -150,35 +138,36 @@ func NewLogicalVolumeService(mgr manager.Manager) (*LogicalVolumeService, error)
 }
 
 // CreateVolume creates volume
-func (s *LogicalVolumeService) CreateVolume(ctx context.Context, node, dc, oc, name, sourceName string, requestBytes int64) (string, error) {
-	logger.Info("k8s.CreateVolume called", "name", name, "node", node, "size", requestBytes, "sourceName", sourceName)
+func (s *LogicalVolumeService) CreateVolume(ctx context.Context, nodeName, providerID, deviceClass, optionClass, lvName, sourceName string, requestBytes int64) (string, error) {
+	logger.Info("k8s.CreateVolume called", "lvName", lvName, "nodeName", nodeName, "size", requestBytes, "sourceName", sourceName)
 	var lv *topolvmv1.LogicalVolume
 	// if the create volume request has no source, proceed with regular lv creation.
 	if sourceName == "" {
 		lv = &topolvmv1.LogicalVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
+				Name: lvName,
 			},
 			Spec: topolvmv1.LogicalVolumeSpec{
-				Name:                name,
-				NodeName:            node,
-				DeviceClass:         dc,
-				LvcreateOptionClass: oc,
+				Name:                lvName,
+				NodeName:            nodeName,
+				ProviderID:          providerID,
+				DeviceClass:         deviceClass,
+				LvcreateOptionClass: optionClass,
 				Size:                *resource.NewQuantity(requestBytes, resource.BinarySI),
 			},
 		}
-
 	} else {
 		// On the other hand, if a volume has a datasource, create a thin snapshot of the source volume with READ-WRITE access.
 		lv = &topolvmv1.LogicalVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
+				Name: lvName,
 			},
 			Spec: topolvmv1.LogicalVolumeSpec{
-				Name:                name,
-				NodeName:            node,
-				DeviceClass:         dc,
-				LvcreateOptionClass: oc,
+				Name:                lvName,
+				NodeName:            nodeName,
+				ProviderID:          providerID,
+				DeviceClass:         deviceClass,
+				LvcreateOptionClass: optionClass,
 				Size:                *resource.NewQuantity(requestBytes, resource.BinarySI),
 				Source:              sourceName,
 				AccessType:          "rw",
@@ -187,7 +176,7 @@ func (s *LogicalVolumeService) CreateVolume(ctx context.Context, node, dc, oc, n
 	}
 
 	existingLV := new(topolvmv1.LogicalVolume)
-	err := s.getter.Get(ctx, client.ObjectKey{Name: name}, existingLV)
+	err := s.getter.Get(ctx, client.ObjectKey{Name: lvName}, existingLV)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return "", err
@@ -197,7 +186,7 @@ func (s *LogicalVolumeService) CreateVolume(ctx context.Context, node, dc, oc, n
 		if err != nil {
 			return "", err
 		}
-		logger.Info("created LogicalVolume CR", "name", name, "sourceID", lv.Spec.Source)
+		logger.Info("created LogicalVolume CR", "name", lvName, "sourceID", lv.Spec.Source)
 	} else {
 		// LV with same name was found; check compatibility
 		// skip check of capabilities because (1) we allow both of two access types, and (2) we allow only one access mode
@@ -207,7 +196,7 @@ func (s *LogicalVolumeService) CreateVolume(ctx context.Context, node, dc, oc, n
 		}
 		// compatible LV was found
 	}
-	volumeID, err := s.waitForStatusUpdate(ctx, name)
+	volumeID, err := s.waitForStatusUpdate(ctx, lvName)
 	if err != nil {
 		return "", err
 	}
@@ -257,16 +246,23 @@ func (s *LogicalVolumeService) DeleteVolume(ctx context.Context, volumeID string
 }
 
 // CreateSnapshot creates a snapshot of existing volume.
-func (s *LogicalVolumeService) CreateSnapshot(ctx context.Context, node, dc, sourceVol, sname, accessType string, snapSize resource.Quantity) (string, error) {
-	logger.Info("CreateSnapshot called", "name", sname)
+func (s *LogicalVolumeService) CreateSnapshot(ctx context.Context, nodeName, providerID, deviceClass, sourceVol, sourceVolName, accessType string, snapSize resource.Quantity) (string, error) {
+	logger.Info("CreateSnapshot called",
+		"nodeName", nodeName,
+		"providerID", providerID,
+		"deviceClass", deviceClass,
+		"sourceVolName", sourceVolName,
+		"snapSize", snapSize,
+	)
 	snapshotLV := &topolvmv1.LogicalVolume{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sname,
+			Name: sourceVolName,
 		},
 		Spec: topolvmv1.LogicalVolumeSpec{
-			Name:        sname,
-			NodeName:    node,
-			DeviceClass: dc,
+			Name:        sourceVolName,
+			NodeName:    nodeName,
+			ProviderID:  providerID,
+			DeviceClass: deviceClass,
 			Size:        snapSize,
 			Source:      sourceVol,
 			AccessType:  accessType,
@@ -274,7 +270,7 @@ func (s *LogicalVolumeService) CreateSnapshot(ctx context.Context, node, dc, sou
 	}
 
 	existingSnapshot := new(topolvmv1.LogicalVolume)
-	err := s.getter.Get(ctx, client.ObjectKey{Name: sname}, existingSnapshot)
+	err := s.getter.Get(ctx, client.ObjectKey{Name: sourceVolName}, existingSnapshot)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return "", err
@@ -283,14 +279,14 @@ func (s *LogicalVolumeService) CreateSnapshot(ctx context.Context, node, dc, sou
 		if err != nil {
 			return "", err
 		}
-		logger.Info("created LogicalVolume CR", "name", sname, "source", snapshotLV.Spec.Source, "accessType", snapshotLV.Spec.AccessType)
+		logger.Info("created LogicalVolume CR", "name", sourceVolName, "source", snapshotLV.Spec.Source, "accessType", snapshotLV.Spec.AccessType)
 	} else {
 		if !existingSnapshot.IsCompatibleWith(snapshotLV) {
 			return "", status.Error(codes.AlreadyExists, "Incompatible LogicalVolume already exists")
 		}
 	}
 
-	volumeID, err := s.waitForStatusUpdate(ctx, sname)
+	volumeID, err := s.waitForStatusUpdate(ctx, sourceVolName)
 	if err != nil {
 		return "", err
 	}
@@ -347,6 +343,40 @@ func (s *LogicalVolumeService) ExpandVolume(ctx context.Context, volumeID string
 // GetVolume returns LogicalVolume by volume ID.
 func (s *LogicalVolumeService) GetVolume(ctx context.Context, volumeID string) (*topolvmv1.LogicalVolume, error) {
 	return s.volumeGetter.Get(ctx, volumeID)
+}
+
+// UpdateNewNodeName updates Updates the CRD LogicalVolume. Retries on conflict.
+func (s *LogicalVolumeService) UpdateNewNodeName(ctx context.Context, volumeId string, newNodeName string) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+
+		lv, err := s.GetVolume(ctx, volumeId)
+		if err != nil {
+			return fmt.Errorf("lvService.GetVolume failed to get crd logicalvolume with id %q: %s", volumeId, err)
+		}
+		oldNodeName := lv.Spec.NodeName
+		lv.Spec.NodeName = newNodeName
+
+		if err := s.writer.Update(ctx, lv); err != nil {
+			if apierrors.IsConflict(err) {
+				logger.Info("detect conflict when LogicalVolume spec update", "name", lv.Name)
+				continue
+			}
+			logger.Error(err, "failed to update LogicalVolume spec", "name", lv.Name)
+			return err
+		}
+		logger.Info("Updated nodeName of crd logicalvolume",
+			"oldNodeName", oldNodeName,
+			"newNodeName", newNodeName,
+			"providerID", lv.Spec.ProviderID,
+			"volumeId", volumeId,
+		)
+		return nil
+	}
 }
 
 // updateSpecSize updates .Spec.Size of LogicalVolume.

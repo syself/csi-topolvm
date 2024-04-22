@@ -148,7 +148,7 @@ gcloud compute ssh --zone ${ZONE} worker1
 # Install lvmd
 TOPOLVM_VERSION=0.6.0
 sudo mkdir -p /opt/sbin
-curl -sSLf https://github.com/topolvm/topolvm/releases/download/v${TOPOLVM_VERSION}/lvmd-${TOPOLVM_VERSION}.tar.gz | sudo tar xzf - -C /opt/sbin
+curl -sSLf https://github.com/syself/csi-topolvm/releases/download/v${TOPOLVM_VERSION}/lvmd-${TOPOLVM_VERSION}.tar.gz | sudo tar xzf - -C /opt/sbin
 
 # Put configuration file
 sudo mkdir -p /etc/topolvm
@@ -167,7 +167,7 @@ gcloud compute ssh --zone ${ZONE} worker2
 # Install lvmd
 TOPOLVM_VERSION=0.6.0
 sudo mkdir -p /opt/sbin
-curl -sSLf https://github.com/topolvm/topolvm/releases/download/v${TOPOLVM_VERSION}/lvmd-${TOPOLVM_VERSION}.tar.gz | sudo tar xzf - -C /opt/sbin
+curl -sSLf https://github.com/syself/csi-topolvm/releases/download/v${TOPOLVM_VERSION}/lvmd-${TOPOLVM_VERSION}.tar.gz | sudo tar xzf - -C /opt/sbin
 
 # Put configuration file
 sudo mkdir -p /etc/topolvm
@@ -183,17 +183,17 @@ exit
 ## 5. Deploy TopoLVM
 
 Before deploying TopoLVM, install `kustomize` by following the link below.
-https://kubernetes-sigs.github.io/kustomize/installation/
+<https://kubernetes-sigs.github.io/kustomize/installation/>
 
 ```bash
 TOPOLVM_VERSION=0.6.0
-kustomize build https://github.com/topolvm/topolvm/deploy/manifests/overlays/daemonset-scheduler?ref=v${TOPOLVM_VERSION} | kubectl apply -f -
+kustomize build https://github.com/syself/csi-topolvm/deploy/manifests/overlays/daemonset-scheduler?ref=v${TOPOLVM_VERSION} | kubectl apply -f -
 kubectl apply -f https://raw.githubusercontent.com/topolvm/topolvm/v${TOPOLVM_VERSION}/deploy/manifests/base/certificates.yaml
 ```
 
 ## 6. Configure `topolvm-scheduler`
 
-###  Update `topolvm-scheduler` manifest
+### Update `topolvm-scheduler` manifest
 
 First, `master` has the following label and taint.
 
@@ -318,6 +318,7 @@ spec:
         claimName: topolvm-pvc
 EOF
 ```
+
 ## 8. Cleanup
 
 Do not forget to delete GCE instances.

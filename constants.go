@@ -2,27 +2,17 @@ package topolvm
 
 import (
 	"fmt"
-	"os"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	pluginName       = "topolvm.io"
-	legacyPluginName = "topolvm.cybozu.com"
+	pluginName = "topolvm.io"
 )
-
-func UseLegacy() bool {
-	return os.Getenv("USE_LEGACY") != ""
-}
 
 // GetPluginName returns the name of the CSI plugin.
 func GetPluginName() string {
-	if UseLegacy() {
-		return legacyPluginName
-	} else {
-		return pluginName
-	}
+	return pluginName
 }
 
 // GetCapacityKeyPrefix returns the key prefix of Node annotation that represents VG free space.
@@ -35,6 +25,10 @@ func GetCapacityResource() corev1.ResourceName {
 	return corev1.ResourceName(fmt.Sprintf("%s/capacity", GetPluginName()))
 }
 
+var ProviderIDLabel = "autopilot.syself.com/providerid"
+
+// Deprecated: GetTopologyNodeKey is deprecated, use ProviderIDLabel instead.
+//
 // TopologyNodeKey returns the key of topology that represents node name.
 func GetTopologyNodeKey() string {
 	return fmt.Sprintf("topology.%s/node", GetPluginName())
@@ -72,9 +66,6 @@ func GetNodeFinalizer() string {
 
 // PVCFinalizer is a finalizer of PVC.
 const PVCFinalizer = pluginName + "/pvc"
-
-// LegacyPVCFinalizer is a legacy finalizer of PVC.
-const LegacyPVCFinalizer = legacyPluginName + "/pvc"
 
 // DefaultCSISocket is the default path of the CSI socket file.
 const DefaultCSISocket = "/run/topolvm/csi-topolvm.sock"

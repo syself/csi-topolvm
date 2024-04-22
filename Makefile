@@ -73,10 +73,10 @@ help: ## Display this help.
 ##@ Development
 
 pkg/lvmd/proto/lvmd.pb.go: pkg/lvmd/proto/lvmd.proto
-	$(PROTOC) --go_out=module=github.com/topolvm/topolvm:. $<
+	$(PROTOC) --go_out=module=github.com/syself/csi-topolvm:. $<
 
 pkg/lvmd/proto/lvmd_grpc.pb.go: pkg/lvmd/proto/lvmd.proto
-	$(PROTOC) --go-grpc_out=module=github.com/topolvm/topolvm:. $<
+	$(PROTOC) --go-grpc_out=module=github.com/syself/csi-topolvm:. $<
 
 docs/lvmd-protocol.md: pkg/lvmd/proto/lvmd.proto
 	$(PROTOC) --doc_out=./docs --doc_opt=markdown,$@ $<
@@ -95,7 +95,7 @@ manifests: generate-legacy-api ## Generate WebhookConfiguration, ClusterRole and
 	cat config/crd/bases/topolvm.cybozu.com_logicalvolumes.yaml | xargs -d"	" printf "$$LEGACY_CRD_TEMPLATE" > charts/topolvm/templates/crds/topolvm.cybozu.com_logicalvolumes.yaml
 
 .PHONY: generate-api ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-generate-api: 
+generate-api:
 	$(CONTROLLER_GEN) object:headerFile="./hack/boilerplate.go.txt" paths="./api/..."
 
 .PHONY: generate-legacy-api
@@ -133,6 +133,7 @@ test: lint ## Run lint and unit tests.
 
 	mkdir -p $(ENVTEST_ASSETS_DIR)
 	source <($(BINDIR)/setup-envtest use $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p env); GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn go test -count=1 -race -v --timeout=120s ./...
+	## hack source <($(BINDIR)/setup-envtest use $(ENVTEST_KUBERNETES_VERSION) --bin-dir=$(ENVTEST_ASSETS_DIR) -p env); GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn go test -count=1 -race -v --timeout=120s ./internal/controller
 
 groupname-test: ## Run unit tests that depends on the groupname.
 	go install ./...
@@ -160,11 +161,11 @@ build-topolvm: build/hypertopolvm build/lvmd
 
 build/hypertopolvm: $(GO_FILES)
 	mkdir -p build
-	GOARCH=$(GOARCH) go build -o $@ -ldflags "-w -s -X github.com/topolvm/topolvm.Version=$(TOPOLVM_VERSION)" ./cmd/hypertopolvm
+	GOARCH=$(GOARCH) go build -o $@ -ldflags "-w -s -X github.com/syself/csi-topolvm.Version=$(TOPOLVM_VERSION)" ./cmd/hypertopolvm
 
 build/lvmd: $(GO_FILES)
 	mkdir -p build
-	GOARCH=$(GOARCH) CGO_ENABLED=0 go build -o $@ -ldflags "-w -s -X github.com/topolvm/topolvm.Version=$(TOPOLVM_VERSION)" ./cmd/lvmd
+	GOARCH=$(GOARCH) CGO_ENABLED=0 go build -o $@ -ldflags "-w -s -X github.com/syself/csi-topolvm.Version=$(TOPOLVM_VERSION)" ./cmd/lvmd
 
 .PHONY: csi-sidecars
 csi-sidecars: ## Build sidecar binaries.
@@ -203,8 +204,12 @@ multi-platform-images: multi-platform-image-normal multi-platform-image-with-sid
 .PHONY: multi-platform-image-normal
 multi-platform-image-normal:
 	mkdir -p build
+	# removed that:
+	#	--platform linux/amd64,linux/arm64/v8,linux/ppc64le \
+	# otherwise:
+	#   ERROR: Multi-platform build is not supported for the docker driver.
+	#   Switch to a different driver, or turn on the containerd image store, and try again.
 	docker buildx build --no-cache $(BUILDX_PUSH_OPTIONS) \
-		--platform linux/amd64,linux/arm64/v8,linux/ppc64le \
 		-t $(IMAGE_PREFIX)topolvm:$(IMAGE_TAG) \
 		--build-arg TOPOLVM_VERSION=$(TOPOLVM_VERSION) \
 		--target topolvm \

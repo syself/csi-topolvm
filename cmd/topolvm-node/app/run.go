@@ -12,15 +12,14 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/spf13/viper"
-	"github.com/topolvm/topolvm"
-	topolvmlegacyv1 "github.com/topolvm/topolvm/api/legacy/v1"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	clientwrapper "github.com/topolvm/topolvm/internal/client"
-	"github.com/topolvm/topolvm/internal/runners"
-	"github.com/topolvm/topolvm/pkg/controller"
-	"github.com/topolvm/topolvm/pkg/driver"
-	"github.com/topolvm/topolvm/pkg/lvmd"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	clientwrapper "github.com/syself/csi-topolvm/internal/client"
+	"github.com/syself/csi-topolvm/internal/runners"
+	"github.com/syself/csi-topolvm/pkg/controller"
+	"github.com/syself/csi-topolvm/pkg/driver"
+	"github.com/syself/csi-topolvm/pkg/lvmd"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -49,7 +48,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(topolvmv1.AddToScheme(scheme))
-	utilruntime.Must(topolvmlegacyv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -57,7 +55,7 @@ func subMain(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	nodename := viper.GetString("nodename")
-	if len(nodename) == 0 {
+	if nodename == "" {
 		return errors.New("node name is not given")
 	}
 
@@ -132,7 +130,7 @@ func subMain(ctx context.Context) error {
 	}
 
 	// Add gRPC server to manager.
-	if err := os.MkdirAll(topolvm.DeviceDirectory, 0755); err != nil {
+	if err := os.MkdirAll(topolvm.DeviceDirectory, 0o755); err != nil {
 		return err
 	}
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(ErrorLoggingInterceptor))

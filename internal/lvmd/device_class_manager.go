@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/topolvm/topolvm"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	topolvm "github.com/syself/csi-topolvm"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 )
 
 // ErrDeviceClassNotFound is returned when a VG or LV is not found.
@@ -37,7 +37,7 @@ func ValidateDeviceClasses(deviceClasses []*lvmdTypes.DeviceClass) error {
 	if len(deviceClasses) < 1 {
 		return errors.New("should have at least one device-class")
 	}
-	var countDefault = 0
+	countDefault := 0
 	dcNames := make(map[string]bool)
 	vgNames := make(map[string]bool)
 	for _, dc := range deviceClasses {

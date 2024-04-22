@@ -1,8 +1,8 @@
 ![TopoLVM logo](./docs/img/TopoLVM_logo.svg)
 [![GitHub release](https://img.shields.io/github/v/release/topolvm/topolvm.svg?maxAge=60)][releases]
-[![Main](https://github.com/topolvm/topolvm/workflows/Main/badge.svg)](https://github.com/topolvm/topolvm/actions)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/topolvm/topolvm?tab=overview)](https://pkg.go.dev/github.com/topolvm/topolvm?tab=overview)
-[![Go Report Card](https://goreportcard.com/badge/github.com/topolvm/topolvm)](https://goreportcard.com/badge/github.com/topolvm/topolvm)
+[![Main](https://github.com/syself/csi-topolvm/workflows/Main/badge.svg)](https://github.com/syself/csi-topolvm/actions)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/syself/csi-topolvm?tab=overview)](https://pkg.go.dev/github.com/syself/csi-topolvm?tab=overview)
+[![Go Report Card](https://goreportcard.com/badge/github.com/syself/csi-topolvm)](https://goreportcard.com/badge/github.com/syself/csi-topolvm)
 
 # TopoLVM
 
@@ -20,11 +20,11 @@ Our supported platform are:
 - Filesystems: ext4, xfs, btrfs(experimental)
 - lvm version 2.02.163 or later (adds JSON output support)
 
-\*1 The host's Linux Kernel must be v4.9 or later which supports `rmapbt` and `reflink`, if you use xfs filesystem with an official docker image.  
-\*2 Tier1 support. The official docker images are provided and all functionalities are tested by CI.  
-\*3 Tier2 support. The official docker images are provided, but no tests run by CI.  
+\*1 The host's Linux Kernel must be v4.9 or later which supports `rmapbt` and `reflink`, if you use xfs filesystem with an official docker image.
+\*2 Tier1 support. The official docker images are provided and all functionalities are tested by CI.
+\*3 Tier2 support. The official docker images are provided, but no tests run by CI.
 
-Docker images are available on [ghcr.io](https://github.com/orgs/topolvm/packages).  
+Docker images are available on [ghcr.io](https://github.com/orgs/topolvm/packages).
 
 ## Getting Started
 
@@ -49,7 +49,7 @@ started contributing, please see our [Contributing Guide](CONTRIBUTING.md).
 - Extended scheduler: TopoLVM extends the general Pod scheduler to prioritize Nodes having larger storage capacity.
 - Volume metrics: Usage stats are exported as Prometheus metrics from `kubelet`.
 - [Volume Expansion](https://kubernetes-csi.github.io/docs/volume-expansion.html): Volumes can be expanded by editing `PersistentVolumeClaim` objects.
-- [Storage capacity tracking](https://github.com/topolvm/topolvm/tree/main/deploy#storage-capacity-tracking): You can enable Storage Capacity Tracking mode instead of using topolvm-scheduler.
+- [Storage capacity tracking](https://github.com/syself/csi-topolvm/tree/main/deploy#storage-capacity-tracking): You can enable Storage Capacity Tracking mode instead of using topolvm-scheduler.
 - [Snapshot](https://kubernetes-csi.github.io/docs/snapshot-restore-feature.html): Snapshots can be taken when using thin provisioning.
 
 ### Planned Features
@@ -58,7 +58,7 @@ started contributing, please see our [Contributing Guide](CONTRIBUTING.md).
 
 ## Communications
 
-If you have any questions or ideas, please use [discussions](https://github.com/topolvm/topolvm/discussions).
+If you have any questions or ideas, please use [discussions](https://github.com/syself/csi-topolvm/discussions).
 
 ## Resources
 
@@ -66,12 +66,12 @@ If you have any questions or ideas, please use [discussions](https://github.com/
 
 A diagram of components is available in [docs/design.md](docs/design.md#diagram).
 
-TopoLVM maintainers presented the motivation and implementation of TopoLVM at KubeCon Europe 2020: https://kccnceu20.sched.com/event/ZerD
+TopoLVM maintainers presented the motivation and implementation of TopoLVM at KubeCon Europe 2020: <https://kccnceu20.sched.com/event/ZerD>
 
 ## License
 
 This project is licensed under [Apache License 2.0](LICENSE).
 
-[releases]: https://github.com/topolvm/topolvm/releases
+[releases]: https://github.com/syself/csi-topolvm/releases
 [CSI]: https://github.com/container-storage-interface/spec
 [kind]: https://github.com/kubernetes-sigs/kind

@@ -48,7 +48,7 @@ spec:
       {{- end }}
       containers:
         - name: topolvm-controller
-          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          image: ghcr.io/syself/csi-topolvm:latest # "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           command:
             - /topolvm-controller
             {{ if not .Values.controller.leaderElection.enabled }}
@@ -187,7 +187,7 @@ spec:
           {{- with .Values.env.csi_attacher }}
           env: {{ toYaml . | nindent 12 }}
           {{- end }}
-          command:
+          args:
             - "--v=5"
             - "--reconcile-sync=30m"
             - "--timeout=45m"

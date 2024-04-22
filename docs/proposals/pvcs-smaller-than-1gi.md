@@ -22,18 +22,18 @@ last-updated: 2023-09-26
 <!-- toc -->
 - [Summary](#summary)
 - [Motivation](#motivation)
-    - [Goals](#goals)
+  - [Goals](#goals)
 - [Proposal](#proposal)
-    - [Decision Outcome](#decision-outcome)
-    - [Open Questions](#open-questions)
+  - [Decision Outcome](#decision-outcome)
+  - [Open Questions](#open-questions)
 - [Design Details](#design-details)
-    - [How to pass byte-level capacities to TopoLVM?](#how-to-pass-byte-level-capacities-to-topolvm)
-    - [How to get around the `<<30`/`>>30` bit shifts](#how-to-get-around-the-3030-bit-shifts)
-    - [Impact Analysis on Existing PVC creation](#impact-analysis-on-existing-pvc-creation)
-    - [Changing how `LogicalVolumeService` is creating `LogicalVolumeSpec`](#changing-how-logicalvolumeservice-is-creating-logicalvolumespec)
-    - [Modifying `controllers/logicalvolume_controller` to create correct LVMD calls via gRPC](#modifying-controllerslogicalvolumecontroller-to-create-correct-lvmd-calls-via-grpc)
-    - [Switching all occurrences of `uint64` to `int64` in lvmd and change `size_gb` to `size` in protobuf messages.](#switching-all-occurrences-of-uint64-to-int64-in-lvmd-and-change-sizegb-to-size-in-protobuf-messages)
-    - [Dealing with less than 1Gi storage in the TopoLVM scheduler prioritization](#dealing-with-less-than-1gi-storage-in-the-topolvm-scheduler-prioritization)
+  - [How to pass byte-level capacities to TopoLVM?](#how-to-pass-byte-level-capacities-to-topolvm)
+  - [How to get around the `<<30`/`>>30` bit shifts](#how-to-get-around-the-3030-bit-shifts)
+  - [Impact Analysis on Existing PVC creation](#impact-analysis-on-existing-pvc-creation)
+  - [Changing how `LogicalVolumeService` is creating `LogicalVolumeSpec`](#changing-how-logicalvolumeservice-is-creating-logicalvolumespec)
+  - [Modifying `controllers/logicalvolume_controller` to create correct LVMD calls via gRPC](#modifying-controllerslogicalvolumecontroller-to-create-correct-lvmd-calls-via-grpc)
+  - [Switching all occurrences of `uint64` to `int64` in lvmd and change `size_gb` to `size` in protobuf messages.](#switching-all-occurrences-of-uint64-to-int64-in-lvmd-and-change-sizegb-to-size-in-protobuf-messages)
+  - [Dealing with less than 1Gi storage in the TopoLVM scheduler prioritization](#dealing-with-less-than-1gi-storage-in-the-topolvm-scheduler-prioritization)
 - [Upgrade / Downgrade Strategy](#upgrade--downgrade-strategy)
 - [Deprecation / Removal](#deprecation--removal)
 <!-- /toc -->
@@ -46,7 +46,7 @@ We need to remove this sizing limitation.
 
 ## Motivation
 
-For most users of TopoLVM, local nodes are the focus. 
+For most users of TopoLVM, local nodes are the focus.
 While TopoLVM was designed to be run in datacenters where the lowest provisional unit might not be an issue, edge use cases require us to create many volumes in a small amount of storage which may only be a few gigabytes.
 To allow TopoLVM for proper use on edge devices and small form-factor use cases of Pods, we need to allow storage capacities that can supply storage lower than 1GB.
 
@@ -60,6 +60,7 @@ To allow TopoLVM for proper use on edge devices and small form-factor use cases 
 
 1. TopoLVM administrator installs TopoLVM as usual
 2. Cluster user creates PVCs with a Storage Class backed by TopoLVM following [the process of PVC creation during dynamic provisioning](../design.md#how-dynamic-provisioning-works):
+
     ```bash
     $ cat <<EOF | kubectl apply -f -
     apiVersion: v1
@@ -76,6 +77,7 @@ To allow TopoLVM for proper use on edge devices and small form-factor use cases 
       volumeMode: Filesystem
     EOF
     ```
+
 3. Once the PVC is used, the [`convertRequestCapacity` method in `topolvm-controller` and `topolvm-node`](../../driver/controller.go) kicks in and defaults to `1Gi` of storage as request capacity, resulting in an error
    if we have only `500Mi` or less storage available to us. We want to change step 3 to allow capacities below 1Gi of storage.
 
@@ -92,12 +94,13 @@ While it would not be completely trivial to replace, we believe this is still a 
 This means we need to **find all occurrences of `<<30` Bit shifts and `GB` values and replace them with _byte-level_ comparisons**.
 
 Breaking this down we will tackle the following questions:
-1. [How to pass byte-level capacities to TopoLVM?](#how-to-pass-byte-level-capacities-to-topolvm) 
-    
+
+1. [How to pass byte-level capacities to TopoLVM?](#how-to-pass-byte-level-capacities-to-topolvm)
+
     This will allow us to actually get the necessary capacity precision required to support less than 1Gi PVCs.
     We want to achieve this by using the inbuilt [byte-level precision in the CSI specification](https://github.com/container-storage-interface/spec/blob/master/spec.md#controller-service-rpc).
 
-2. [How to get around the `<<30`/`>>30` bit shifts?](#how-to-get-around-the-3030-bit-shifts) 
+2. [How to get around the `<<30`/`>>30` bit shifts?](#how-to-get-around-the-3030-bit-shifts)
 
     This will allow us to use code paths in TopoLVM that do not require comparisons with Gi-level precision.
     We are showcasing how it is possible to get around the bitshift and how to replace it with byte-level comparisons.
@@ -109,16 +112,17 @@ Additionally, as a result of an [Impact Analysis of the code path when creating 
 1. **Any request/response made with lvmd using a `size_gb` field needs to be changed to a different `size` because otherwise we cannot communicate less than 1Gi capacities to `lvmd`.**
 2. **The [current prioritisation algorithm within the TopoLVM Scheduler Extension](../topolvm-scheduler.md#prioritize) needs to be adjusted and its current version needs to specify a limitation when working with storage less than 1Gi**
 
-### Code Changes related to the API 
+### Code Changes related to the API
 
 We are proposing how to change the current codebase [considering the breaking changes in the API](#api-changes):
+
 - How to deal with breaking changes in LVMD?
-   - [Switching all occurrences of `uint64` to `int64` in lvmd and change `size_gb` to `size` in protobuf messages.](#switching-all-occurrences-of-uint64-to-int64-in-lvmd-and-change-sizegb-to-size-in-protobuf-messages)
+  - [Switching all occurrences of `uint64` to `int64` in lvmd and change `size_gb` to `size` in protobuf messages.](#switching-all-occurrences-of-uint64-to-int64-in-lvmd-and-change-sizegb-to-size-in-protobuf-messages)
 - How to touch important components which are using bit shifts that were previously using `size_gb`
-    - [Changing how `LogicalVolumeService` is creating `LogicalVolumeSpec`](#changing-how-logicalvolumeservice-is-creating-logicalvolumespec)
-    - [Modifying `controllers/logicalvolume_controller` to create correct LVMD calls via gRPC](#modifying-controllerslogicalvolumecontroller-to-create-correct-lvmd-calls-via-grpc)
+  - [Changing how `LogicalVolumeService` is creating `LogicalVolumeSpec`](#changing-how-logicalvolumeservice-is-creating-logicalvolumespec)
+  - [Modifying `controllers/logicalvolume_controller` to create correct LVMD calls via gRPC](#modifying-controllerslogicalvolumecontroller-to-create-correct-lvmd-calls-via-grpc)
 - How to deal with breaking changes in the TopoLVM Scheduler?
-   - [Dealing with less than 1Gi storage in the TopoLVM scheduler prioritization](#dealing-with-less-than-1gi-storage-in-the-topolvm-scheduler-prioritization)
+  - [Dealing with less than 1Gi storage in the TopoLVM scheduler prioritization](#dealing-with-less-than-1gi-storage-in-the-topolvm-scheduler-prioritization)
 
 ### Decision Outcome
 
@@ -134,7 +138,6 @@ Under the assumption that the change is deemed useful or accepted, we still need
 
 ## Design Details
 
-
 ### How to pass byte-level capacities to TopoLVM?
 
 The answer to this question lies in `topolvm-controller` and `topolvm-node` when called by Kubernetes.
@@ -146,15 +149,15 @@ With every call made to a volume request (e.g. `CreateVolume`), a `CapacityRange
 // `required_bytes` and `limit_bytes` SHALL be set to the same value. At
 // least one of the these fields MUST be specified.
 type CapacityRange struct {
-	// Volume MUST be at least this big. This field is OPTIONAL.
-	// A value of 0 is equal to an unspecified field value.
-	// The value of this field MUST NOT be negative.
-	RequiredBytes int64 `protobuf:"varint,1,opt,name=required_bytes,json=requiredBytes,proto3" json:"required_bytes,omitempty"`
-	// Volume MUST not be bigger than this. This field is OPTIONAL.
-	// A value of 0 is equal to an unspecified field value.
-	// The value of this field MUST NOT be negative.
-	LimitBytes           int64    `protobuf:"varint,2,opt,name=limit_bytes,json=limitBytes,proto3" json:"limit_bytes,omitempty"`
-	// ...
+ // Volume MUST be at least this big. This field is OPTIONAL.
+ // A value of 0 is equal to an unspecified field value.
+ // The value of this field MUST NOT be negative.
+ RequiredBytes int64 `protobuf:"varint,1,opt,name=required_bytes,json=requiredBytes,proto3" json:"required_bytes,omitempty"`
+ // Volume MUST not be bigger than this. This field is OPTIONAL.
+ // A value of 0 is equal to an unspecified field value.
+ // The value of this field MUST NOT be negative.
+ LimitBytes           int64    `protobuf:"varint,2,opt,name=limit_bytes,json=limitBytes,proto3" json:"limit_bytes,omitempty"`
+ // ...
 }
 ```
 
@@ -162,28 +165,27 @@ As a result, all capacity ranges in CSI are coming from `req.GetCapacityRange().
 
 **Important here: both are raw byte counts in the form of `int64`.**
 
-
 _However_, We currently convert all request capacity with the `convertRequestCapacity` method
 
 ```go
 func convertRequestCapacity(requestBytes, limitBytes int64) (int64, error) {
-	if requestBytes < 0 {
-		return 0, errors.New("required capacity must not be negative")
-	}
-	if limitBytes < 0 {
-		return 0, errors.New("capacity limit must not be negative")
-	}
+ if requestBytes < 0 {
+  return 0, errors.New("required capacity must not be negative")
+ }
+ if limitBytes < 0 {
+  return 0, errors.New("capacity limit must not be negative")
+ }
 
-	if limitBytes != 0 && requestBytes > limitBytes {
-		return 0, fmt.Errorf(
-			"requested capacity exceeds limit capacity: request=%d limit=%d", requestBytes, limitBytes,
-		)
-	}
+ if limitBytes != 0 && requestBytes > limitBytes {
+  return 0, fmt.Errorf(
+   "requested capacity exceeds limit capacity: request=%d limit=%d", requestBytes, limitBytes,
+  )
+ }
 
-	if requestBytes == 0 {
-		return 1, nil
-	}
-	return (requestBytes-1)>>30 + 1, nil
+ if requestBytes == 0 {
+  return 1, nil
+ }
+ return (requestBytes-1)>>30 + 1, nil
 }
 ```
 
@@ -200,25 +202,25 @@ As one can see below we can simply get around the bitshift by using the full byt
 package main
 
 import (
-	"fmt"
+ "fmt"
 
-	. "k8s.io/apimachinery/pkg/api/resource"
+ . "k8s.io/apimachinery/pkg/api/resource"
 )
 
 func main() {
-	var oldDefGi = int64(1)
-	var newDefGi = MustParse(fmt.Sprintf("%vGi", oldDefGi))
-	var someGiBytes = int64(1073741824)
+ var oldDefGi = int64(1)
+ var newDefGi = MustParse(fmt.Sprintf("%vGi", oldDefGi))
+ var someGiBytes = int64(1073741824)
 
-	var oldDefMi = int64(500)
-	var newDefMi = MustParse(fmt.Sprintf("%vMi", oldDefMi))
-	var someMiBytes = int64(524288000)
+ var oldDefMi = int64(500)
+ var newDefMi = MustParse(fmt.Sprintf("%vMi", oldDefMi))
+ var someMiBytes = int64(524288000)
 
-	println(someGiBytes == oldDefGi<<30) // always true
-	println(NewQuantity(someGiBytes, BinarySI).Cmp(newDefGi) == 0) // always true
+ println(someGiBytes == oldDefGi<<30) // always true
+ println(NewQuantity(someGiBytes, BinarySI).Cmp(newDefGi) == 0) // always true
 
-	println(someMiBytes == oldDefMi<<30) // always false
-	println(NewQuantity(someMiBytes, BinarySI).Cmp(newDefMi) == 0) // always true
+ println(someMiBytes == oldDefMi<<30) // always false
+ println(NewQuantity(someMiBytes, BinarySI).Cmp(newDefMi) == 0) // always true
 }
 
 ```
@@ -227,13 +229,13 @@ At the same time we already make use of the serialized Capacity in `LogicalVolum
 Since all CSI Driver values already work with bytes, we have no trouble taking in the new data, we will just accept more ranges.
 
 We will make 2 changes to LVMD:
+
 1. We will accept a breaking change in `lvmd` that moves from `size_gb` to a more flexible `size` when relating to request / response sizes.
 2. We will move from `uint64` comparisons in `lvmd` to `int64` comparisons. This is the same level of precision as within CSI driver specifications.
 
 Together with changes in LVMD we can easily replace all bit shifted comparisons with byte level comparisons based on `int64`.
 
 Within tests, we will write a small helper function that easily allows defining `int64` for any amount of Gi that we previously used bitshifts for.
-
 
 ### Impact Analysis on Existing PVC creation
 
@@ -258,7 +260,7 @@ When following the [architecture of a PVC creation during dynamic provisioning](
 5. > `topolvm-node` sends a volume create request to `lvmd`.
 
    **BREAKING**: We need to make sure that the request sent to lvmd via gRPC is able to convey capacities less than 1Gi, which is currently not possible.
-   Similarly, all responses must be able to work with less than 1Gi capacities. 
+   Similarly, all responses must be able to work with less than 1Gi capacities.
    More details on this can be found in the section on the [Impact on LVMD protocol changes](#switching-all-occurrences-of-uint64-to-int64-in-lvmd-and-change-sizegb-to-size-in-protobuf-messages).
 
 6. > `lvmd` creates an LVM logical volume as requested.
@@ -281,7 +283,6 @@ When following the [architecture of a PVC creation during dynamic provisioning](
 
     No changes are expected after sizing has been completed
 
-
 Additionally, any TopoLVM user making use of the [scheduler extension](../topolvm-scheduler.md) will also be impacted by the following changes:
 
 1. > `topolvm-node` exposes free storage capacity as `capacity.topolvm.io/<device-class>` annotation of each Node.
@@ -292,8 +293,9 @@ Additionally, any TopoLVM user making use of the [scheduler extension](../topolv
    > - The value of the annotation is the sum of the storage capacity requests of unbound TopoLVM PVCs for each volume group referenced by the pod.
 
    This logic currently rounds up to the next GB value and needs to be modified from `requested = ((req.Value()-1)>>30 + 1) << 30` to `requested = req.Value()`
-   for the [Mutating Webhook](https://github.com/topolvm/topolvm/blob/main/hook/mutate_pod.go#L248) in all places.
+   for the [Mutating Webhook](https://github.com/syself/csi-topolvm/blob/main/hook/mutate_pod.go#L248) in all places.
    Otherwise, the capacity annotation will be incorrect.
+
     ```go
     requested int64 := topolvm.DefaultSize
     if req, ok := volumeClaimTemplate.Spec.Resources.Requests[corev1.ResourceStorage]; ok {
@@ -338,7 +340,7 @@ Calls will directly include the request / response bytes like so:
 will have to have `SizeGb` replaced with `Size` and their raw values so we can get rid of the bitshift. This is only
 possible by introducing a breaking change to LVMD protocol.
 
-### Switching all occurrences of `uint64` to `int64` in lvmd and change `size_gb` to `size` in protobuf messages.
+### Switching all occurrences of `uint64` to `int64` in lvmd and change `size_gb` to `size` in protobuf messages
 
 Since lvmd currently includes various messages with a `uint64 size_gb` field, we should think of how to properly
 serialize new the capacity information in a scalable way. Here we have an inbuilt option with the kubernetes quantities as well.
@@ -353,14 +355,14 @@ we could simply remove this limitation and pass requestBytes natively as its byt
       repeated string tags = 3;     // Tags to add to the volume during creation
       string device_class = 4;
       string lvcreate_option_class = 5;
-  
+
 +     int64 size = 6; // Volume size in canonical bytes.
     }
 ```
 
 Note that SizeGB is used as uint64 where we cast down to int64. This means that potentially,
 if someone had a volume before this change greater than `9.223.372.036.854.775.807 Gi`, he would now experience an overflow
-that would break lvmd. *However*, we need to be aware that the CSIDriver capacity-ranges at most support values up to int64 limits,
+that would break lvmd. _However_, we need to be aware that the CSIDriver capacity-ranges at most support values up to int64 limits,
 so we do not break any currently known path.
 
 This change from `size_gb` to `size` can be reused across all Requests/Responses and only needs minor adjustment.
@@ -376,7 +378,7 @@ We can replace all occurrences during the parsing process to get arround this:
 +/-     size int64
 +/-     free int64
     }
-    
+
     func (u *vg) UnmarshalJSON(data []byte) error {
         type vgInternal struct {
             Name string `json:"vg_name"`
@@ -384,15 +386,15 @@ We can replace all occurrences during the parsing process to get arround this:
             Size string `json:"vg_size"`
             Free string `json:"vg_free"`
         }
-    
+
         var temp vgInternal
         if err := json.Unmarshal(data, &temp); err != nil {
             return err
         }
-    
+
         u.name = temp.Name
         u.uuid = temp.UUID
-    
+
         var convErr error
 +/-     u.size, convErr = strconv.ParseInt(temp.Size, 10, 64)
         if convErr != nil {
@@ -402,12 +404,12 @@ We can replace all occurrences during the parsing process to get arround this:
         if convErr != nil {
             return convErr
         }
-    
+
         return nil
     }
 ```
 
-Of course the same adjustments from `uint64` to `int64` be done for all methods using these structs and similar structs like `lv`.  
+Of course the same adjustments from `uint64` to `int64` be done for all methods using these structs and similar structs like `lv`.
 Then they can be reused in `lvmd/lvservice` and `lvmd/vgservice` to simplify the calls from uint64 bitshift comparisons to simple byte comparisons:
 The resulting `CreateLV` call for example would look almost exactly like the original `CreateLV`:
 
@@ -476,38 +478,38 @@ Our simplest suggestion here, in order to not break anything, is to clearly mark
 a new lower bound for less than 1Gi storage in the method `capacityToScore`:
 
 ```go
-// DEPRECATED: capacityToScore uses gi precision and a divisor as per formula 
+// DEPRECATED: capacityToScore uses gi precision and a divisor as per formula
 //  min(10, max(0, log2(capacity >> 30 / divisor))) for (capacity>>30)>0
 // Its limited to score capacities 1Gi>capacity>0 with 1 without any detailed precision.
 // Note that this is a legacy scheduler and should not be used for volumes smaller 1Gi due to this limitation.
 func capacityToScore(capacity uint64, divisor float64) int {
-+/-	gb := capacity >> 30
++/- gb := capacity >> 30
 +/-
-+/-	// we have a capacity that is greater than 0 but less than 1Gi, apply score 1
-+/-	if capacity > 0 && gb == 0 {
-+/-		return 1
-+/-	}
-	// avoid logarithm of zero, which diverges to negative infinity.
-	if gb == 0 {
-		return 0
-	}
++/- // we have a capacity that is greater than 0 but less than 1Gi, apply score 1
++/- if capacity > 0 && gb == 0 {
++/-  return 1
++/- }
+ // avoid logarithm of zero, which diverges to negative infinity.
+ if gb == 0 {
+  return 0
+ }
 
-	converted := int(math.Log2(float64(gb) / divisor))
-	switch {
-	case converted < 0:
-		return 0
-	case converted > 10:
-		return 10
-	default:
-		return converted
-	}
+ converted := int(math.Log2(float64(gb) / divisor))
+ switch {
+ case converted < 0:
+  return 0
+ case converted > 10:
+  return 10
+ default:
+  return converted
+ }
 }
 ```
 
 This leads to every free Capacity between 1 byte and 1GB free to get the score of `1`, which means they will be scored the same.
 The only downside to this algorithm is that its precision is 1GB. So if there are 2 nodes with `500Mi` and `700Mi` free storage, both would receive the same score.
 
-The only way to get around this is by creating a new scoring algorithm side-by-side and allow users to switch. 
+The only way to get around this is by creating a new scoring algorithm side-by-side and allow users to switch.
 However, this proposal will only focus on solving the existing scheduling mechanism and will thus recommend to simply make the old scheduler work.
 A separate proposal should be created for the new scheduling algorithm.
 

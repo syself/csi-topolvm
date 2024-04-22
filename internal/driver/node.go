@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -10,23 +11,25 @@ import (
 	"sync"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/topolvm/topolvm"
-	"github.com/topolvm/topolvm/internal/driver/internal/k8s"
-	"github.com/topolvm/topolvm/internal/filesystem"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
+	topolvm "github.com/syself/csi-topolvm"
+	"github.com/syself/csi-topolvm/internal/driver/internal/k8s"
+	"github.com/syself/csi-topolvm/internal/filesystem"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	"github.com/syself/csi-topolvm/pkg/node"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	mountutil "k8s.io/mount-utils"
 	utilexec "k8s.io/utils/exec"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
 	findmntCmd = "/bin/findmnt"
 
-	deviceMode = 0600 | unix.S_IFBLK
+	deviceMode = 0o600 | unix.S_IFBLK
 )
 
 var nodeLogger = ctrl.Log.WithName("driver").WithName("node")
@@ -38,9 +41,15 @@ func NewNodeServer(nodeName string, vgServiceClient proto.VGServiceClient, lvSer
 		return nil, err
 	}
 
+	providerID, err := node.GetProviderIDByNodeName(context.Background(), mgr.GetClient(), nodeName)
+	if err != nil {
+		return nil, fmt.Errorf("GetProviderID failed for node %q in NewNodeServer: %w", nodeName, err)
+	}
 	return &nodeServer{
 		server: &nodeServerNoLocked{
 			nodeName:     nodeName,
+			providerID:   providerID,
+			kubeClient:   mgr.GetClient(),
 			client:       vgServiceClient,
 			lvService:    lvServiceClient,
 			k8sLVService: lvService,
@@ -108,10 +117,12 @@ type nodeServerNoLocked struct {
 	csi.UnimplementedNodeServer
 
 	nodeName     string
+	providerID   string
 	client       proto.VGServiceClient
 	lvService    proto.LVServiceClient
 	k8sLVService *k8s.LogicalVolumeService
 	mounter      mountutil.SafeFormatAndMount
+	kubeClient   client.Client
 }
 
 func (s *nodeServerNoLocked) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
@@ -216,7 +227,7 @@ func (s *nodeServerNoLocked) nodePublishFilesystemVolume(req *csi.NodePublishVol
 		return err
 	}
 
-	err = os.MkdirAll(req.GetTargetPath(), 0755)
+	err = os.MkdirAll(req.GetTargetPath(), 0o755)
 	if err != nil {
 		return status.Errorf(codes.Internal, "mkdir failed: target=%s, error=%v", req.GetTargetPath(), err)
 	}
@@ -239,7 +250,7 @@ func (s *nodeServerNoLocked) nodePublishFilesystemVolume(req *csi.NodePublishVol
 		if err := s.mounter.FormatAndMount(device, req.GetTargetPath(), mountOption.FsType, mountOptions); err != nil {
 			return status.Errorf(codes.Internal, "mount failed: volume=%s, error=%v", req.GetVolumeId(), err)
 		}
-		if err := os.Chmod(req.GetTargetPath(), 0777|os.ModeSetgid); err != nil {
+		if err := os.Chmod(req.GetTargetPath(), 0o777|os.ModeSetgid); err != nil {
 			return status.Errorf(codes.Internal, "chmod 2777 failed: target=%s, error=%v", req.GetTargetPath(), err)
 		}
 	}
@@ -276,7 +287,7 @@ func (s *nodeServerNoLocked) createDeviceIfNeeded(device string, lv *proto.Logic
 		}
 		fallthrough
 	case unix.ENOENT:
-		err = os.MkdirAll(path.Dir(device), 0755)
+		err = os.MkdirAll(path.Dir(device), 0o755)
 		if err != nil {
 			return status.Errorf(codes.Internal, "mkdir failed: target=%s, error=%v", path.Dir(device), err)
 		}
@@ -568,12 +579,13 @@ func (s *nodeServerNoLocked) NodeGetCapabilities(context.Context, *csi.NodeGetCa
 	}, nil
 }
 
+// NodeGetInfo returns the label which gets added to the node.
 func (s *nodeServerNoLocked) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	return &csi.NodeGetInfoResponse{
 		NodeId: s.nodeName,
 		AccessibleTopology: &csi.Topology{
 			Segments: map[string]string{
-				topolvm.GetTopologyNodeKey(): s.nodeName,
+				topolvm.ProviderIDLabel: s.providerID,
 			},
 		},
 	}, nil

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 )
 
 func TestValidateDeviceClasses(t *testing.T) {

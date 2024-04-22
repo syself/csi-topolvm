@@ -12,19 +12,23 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/topolvm/topolvm"
-	"github.com/topolvm/topolvm/internal/scheduler"
+	topolvm "github.com/syself/csi-topolvm"
+	"github.com/syself/csi-topolvm/internal/scheduler"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/yaml"
 )
 
-var cfgFilePath string
-var zapOpts zap.Options
+var (
+	cfgFilePath string
+	zapOpts     zap.Options
+)
 
-const defaultDivisor = 1
-const defaultListenAddr = ":8000"
+const (
+	defaultDivisor    = 1
+	defaultListenAddr = ":8000"
+)
 
 // Config represents configuration parameters for topolvm-scheduler
 type Config struct {

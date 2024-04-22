@@ -6,9 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
 	"google.golang.org/grpc"
 	corev1 "k8s.io/api/core/v1"
 	storegev1 "k8s.io/api/storage/v1"
@@ -21,8 +21,7 @@ import (
 
 var volumes = &[]*proto.LogicalVolume{}
 
-type MockVGServiceClient struct {
-}
+type MockVGServiceClient struct{}
 
 // GetFreeBytes implements proto.VGServiceClient.
 func (MockVGServiceClient) GetFreeBytes(ctx context.Context, in *proto.GetFreeBytesRequest, opts ...grpc.CallOption) (*proto.GetFreeBytesResponse, error) {
@@ -41,8 +40,7 @@ func (MockVGServiceClient) Watch(ctx context.Context, in *proto.Empty, opts ...g
 	panic("unimplemented")
 }
 
-type MockLVServiceClient struct {
-}
+type MockLVServiceClient struct{}
 
 // CreateLV implements proto.LVServiceClient.
 func (c MockLVServiceClient) CreateLV(ctx context.Context, in *proto.CreateLVRequest, opts ...grpc.CallOption) (*proto.CreateLVResponse, error) {
@@ -90,7 +88,8 @@ var _ = Describe("LogicalVolume controller", func() {
 		vgService = MockVGServiceClient{}
 		lvService = MockLVServiceClient{}
 
-		reconciler := NewLogicalVolumeReconcilerWithServices(mgr.GetClient(), "node"+suffix, vgService, lvService)
+		reconciler, err := NewLogicalVolumeReconcilerWithServices(mgr.GetClient(), "node"+suffix, "providerID"+suffix, vgService, lvService)
+		Expect(err).NotTo(HaveOccurred())
 		err = reconciler.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -108,15 +107,13 @@ var _ = Describe("LogicalVolume controller", func() {
 	})
 
 	setupResources := func(ctx context.Context, suffix string) topolvmv1.LogicalVolume {
-		node := corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "node" + suffix,
-				Finalizers: []string{
-					topolvm.GetNodeFinalizer(),
-				},
+		nodeObj := corev1.Node{
+			ObjectMeta: metav1.ObjectMeta{Name: "node" + suffix, Finalizers: []string{topolvm.GetNodeFinalizer()}},
+			Spec: corev1.NodeSpec{
+				ProviderID: "providerID" + suffix,
 			},
 		}
-		err := k8sClient.Create(ctx, &node)
+		err := k8sClient.Create(ctx, &nodeObj)
 		Expect(err).NotTo(HaveOccurred())
 
 		sc := storegev1.StorageClass{
@@ -134,7 +131,7 @@ var _ = Describe("LogicalVolume controller", func() {
 				Name:      "pvc" + suffix,
 				Namespace: ns,
 				Annotations: map[string]string{
-					AnnSelectedNode: node.Name,
+					AnnSelectedNode: nodeObj.Name,
 				},
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
@@ -142,7 +139,7 @@ var _ = Describe("LogicalVolume controller", func() {
 				AccessModes: []corev1.PersistentVolumeAccessMode{
 					corev1.ReadWriteOnce,
 				},
-				Resources: corev1.ResourceRequirements{
+				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
 						corev1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
 					},
@@ -157,7 +154,8 @@ var _ = Describe("LogicalVolume controller", func() {
 				Name: "lv" + suffix,
 			},
 			Spec: topolvmv1.LogicalVolumeSpec{
-				NodeName: node.Name,
+				NodeName:   nodeObj.Name,
+				ProviderID: nodeObj.Spec.ProviderID,
 			},
 		}
 		err = k8sClient.Create(ctx, &lv)

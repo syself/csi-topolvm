@@ -14,9 +14,9 @@ import (
 	. "github.com/onsi/gomega"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	lvmdApp "github.com/topolvm/topolvm/cmd/lvmd/app"
-	"github.com/topolvm/topolvm/internal/lvmd"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	lvmdApp "github.com/syself/csi-topolvm/cmd/lvmd/app"
+	"github.com/syself/csi-topolvm/internal/lvmd"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )

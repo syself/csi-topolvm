@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/topolvm/topolvm"
-	topolvmlegacyv1 "github.com/topolvm/topolvm/api/legacy/v1"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -23,22 +22,22 @@ import (
 
 // LogicalVolumeReconciler reconciles a LogicalVolume object
 type LogicalVolumeReconciler struct {
-	client    client.Client
-	nodeName  string
-	vgService proto.VGServiceClient
-	lvService proto.LVServiceClient
+	client     client.Client
+	providerID string
+	vgService  proto.VGServiceClient
+	lvService  proto.LVServiceClient
 }
 
 //+kubebuilder:rbac:groups=topolvm.io,resources=logicalvolumes,verbs=get;list;watch;update;patch
 //+kubebuilder:rbac:groups=topolvm.io,resources=logicalvolumes/status,verbs=get;update;patch
 
-func NewLogicalVolumeReconcilerWithServices(client client.Client, nodeName string, vgService proto.VGServiceClient, lvService proto.LVServiceClient) *LogicalVolumeReconciler {
+func NewLogicalVolumeReconcilerWithServices(client client.Client, nodeName string, providerID string, vgService proto.VGServiceClient, lvService proto.LVServiceClient) (*LogicalVolumeReconciler, error) {
 	return &LogicalVolumeReconciler{
-		client:    client,
-		nodeName:  nodeName,
-		vgService: vgService,
-		lvService: lvService,
-	}
+		client:     client,
+		providerID: providerID,
+		vgService:  vgService,
+		lvService:  lvService,
+	}, nil
 }
 
 // Reconcile creates/deletes LVM logical volume for a LogicalVolume.
@@ -53,8 +52,11 @@ func (r *LogicalVolumeReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		return ctrl.Result{}, nil
 	}
-	if lv.Spec.NodeName != r.nodeName {
-		log.Info("unfiltered logical value", "nodeName", lv.Spec.NodeName)
+	if lv.Spec.ProviderID != r.providerID {
+		log.Info("unfiltered logical value",
+			"r.providerID", r.providerID,
+			"lv.Spec.ProviderID", lv.Spec.ProviderID,
+			"lv.Spec.NodeName", lv.Spec.NodeName)
 		return ctrl.Result{}, nil
 	}
 
@@ -136,12 +138,8 @@ func (r *LogicalVolumeReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 // SetupWithManager sets up the controller with the Manager.
 func (r *LogicalVolumeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	builder := ctrl.NewControllerManagedBy(mgr)
-	if topolvm.UseLegacy() {
-		builder = builder.For(&topolvmlegacyv1.LogicalVolume{})
-	} else {
-		builder = builder.For(&topolvmv1.LogicalVolume{})
-	}
-	return builder.WithEventFilter(&logicalVolumeFilter{r.nodeName}).Complete(r)
+	builder = builder.For(&topolvmv1.LogicalVolume{})
+	return builder.WithEventFilter(&logicalVolumeFilter{r.providerID}).Complete(r)
 }
 
 func (r *LogicalVolumeReconciler) removeLVIfExists(ctx context.Context, log logr.Logger, lv *topolvmv1.LogicalVolume) error {
@@ -263,7 +261,6 @@ func (r *LogicalVolumeReconciler) createLV(ctx context.Context, log logr.Logger,
 		lv.Status.Message = ""
 		return nil
 	}()
-
 	if err != nil {
 		if err2 := r.client.Status().Update(ctx, lv); err2 != nil {
 			// err2 is logged but not returned because err is more important
@@ -319,7 +316,6 @@ func (r *LogicalVolumeReconciler) expandLV(ctx context.Context, log logr.Logger,
 		lv.Status.Message = ""
 		return nil
 	}()
-
 	if err != nil {
 		if err2 := r.client.Status().Update(ctx, lv); err2 != nil {
 			// err2 is logged but not returned because err is more important
@@ -339,28 +335,17 @@ func (r *LogicalVolumeReconciler) expandLV(ctx context.Context, log logr.Logger,
 }
 
 type logicalVolumeFilter struct {
-	nodeName string
+	provivderID string
 }
 
 func (f logicalVolumeFilter) filter(obj client.Object) bool {
 	var name string
-	if topolvm.UseLegacy() {
-		lv, ok := obj.(*topolvmlegacyv1.LogicalVolume)
-		if !ok {
-			return false
-		}
-		name = lv.Spec.NodeName
-	} else {
-		lv, ok := obj.(*topolvmv1.LogicalVolume)
-		if !ok {
-			return false
-		}
-		name = lv.Spec.NodeName
+	lv, ok := obj.(*topolvmv1.LogicalVolume)
+	if !ok {
+		return false
 	}
-	if name == f.nodeName {
-		return true
-	}
-	return false
+	name = lv.Spec.ProviderID
+	return name == f.provivderID
 }
 
 func (f logicalVolumeFilter) Create(e event.CreateEvent) bool {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 )
 
 func TestNewEmbeddedServiceClients(t *testing.T) {
@@ -14,23 +14,26 @@ func TestNewEmbeddedServiceClients(t *testing.T) {
 		name          string
 		deviceClasses []*lvmdTypes.DeviceClass
 	}{
-
-		{"volumegroup", []*lvmdTypes.DeviceClass{
-			{
-				Name:        "dc",
-				VolumeGroup: "test_vgservice",
-			}},
-		},
-		{"thinpool", []*lvmdTypes.DeviceClass{
-			{
-				Name:        "dc",
-				VolumeGroup: "test_vgservice",
-				Type:        lvmdTypes.TypeThin,
-				ThinPoolConfig: &lvmdTypes.ThinPoolConfig{
-					Name:               "test_pool",
-					OverprovisionRatio: overprovisionRatio,
+		{
+			"volumegroup", []*lvmdTypes.DeviceClass{
+				{
+					Name:        "dc",
+					VolumeGroup: "test_vgservice",
 				},
-			}},
+			},
+		},
+		{
+			"thinpool", []*lvmdTypes.DeviceClass{
+				{
+					Name:        "dc",
+					VolumeGroup: "test_vgservice",
+					Type:        lvmdTypes.TypeThin,
+					ThinPoolConfig: &lvmdTypes.ThinPoolConfig{
+						Name:               "test_pool",
+						OverprovisionRatio: overprovisionRatio,
+					},
+				},
+			},
 		},
 	}
 
@@ -61,7 +64,6 @@ func TestNewEmbeddedServiceClients(t *testing.T) {
 			if res.FreeBytes != 1 {
 				t.Fatal("no free byte set")
 			}
-
 		})
 	}
 }

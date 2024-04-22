@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/topolvm/topolvm"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	topolvm "github.com/syself/csi-topolvm"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 )

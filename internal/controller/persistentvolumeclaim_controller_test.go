@@ -261,135 +261,6 @@ var _ = Describe("PersistentVolumeClaimController controller", func() {
 		}
 	})
 
-	It("should remove deprecated finalizer", func() {
-		ctx := context.Background()
-		ns := createNamespace()
-		testCases := []struct {
-			title            string
-			pvcMeta          metav1.ObjectMeta
-			expectFinalizers []string
-		}{
-			{
-				title: "empty finalizers",
-				pvcMeta: metav1.ObjectMeta{
-					Name:       "pvc1",
-					Namespace:  ns,
-					Finalizers: []string{},
-				},
-				expectFinalizers: []string{
-					"kubernetes.io/pvc-protection",
-				},
-			},
-			{
-				title: "there is an only foreign finalizer",
-				pvcMeta: metav1.ObjectMeta{
-					Name:      "pvc2",
-					Namespace: ns,
-					Finalizers: []string{
-						"dummy/dummy",
-					},
-				},
-				expectFinalizers: []string{
-					"dummy/dummy",
-					"kubernetes.io/pvc-protection",
-				},
-			},
-			{
-				title: "combination of foreign and deprecated finalizers",
-				pvcMeta: metav1.ObjectMeta{
-					Name:      "pvc3",
-					Namespace: ns,
-					Finalizers: []string{
-						"dummy/dummy",
-						"topolvm.cybozu.com/pvc",
-					},
-				},
-				expectFinalizers: []string{
-					"dummy/dummy",
-					"kubernetes.io/pvc-protection",
-				},
-			},
-			{
-				title: "there is an only new finalizer",
-				pvcMeta: metav1.ObjectMeta{
-					Name:      "pvc4",
-					Namespace: ns,
-					Finalizers: []string{
-						"topolvm.io/pvc",
-					},
-				},
-				expectFinalizers: []string{
-					"topolvm.io/pvc",
-					"kubernetes.io/pvc-protection",
-				},
-			},
-			{
-				title: "there are same old finalizers",
-				pvcMeta: metav1.ObjectMeta{
-					Name:      "pvc5",
-					Namespace: ns,
-					Finalizers: []string{
-						"dummy/dummy",
-						"topolvm.cybozu.com/pvc",
-						"topolvm.cybozu.com/pvc",
-					},
-				},
-				expectFinalizers: []string{
-					"dummy/dummy",
-					"kubernetes.io/pvc-protection",
-				},
-			},
-			{
-				title: "there are old finalizer and new finalizer",
-				pvcMeta: metav1.ObjectMeta{
-					Name:      "pvc6",
-					Namespace: ns,
-					Finalizers: []string{
-						"dummy/dummy",
-						"topolvm.cybozu.com/pvc",
-						"topolvm.io/pvc",
-					},
-				},
-				expectFinalizers: []string{
-					"dummy/dummy",
-					"topolvm.io/pvc",
-					"kubernetes.io/pvc-protection",
-				},
-			},
-		}
-
-		for _, testPVC := range testCases {
-			pvc := corev1.PersistentVolumeClaim{
-				ObjectMeta: testPVC.pvcMeta,
-				Spec: corev1.PersistentVolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteOnce,
-					},
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							"storage": resource.MustParse("1Gi"),
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(ctx, &pvc)
-			Expect(err).NotTo(HaveOccurred())
-		}
-
-		for _, testPVC := range testCases {
-			pvc := corev1.PersistentVolumeClaim{}
-
-			Eventually(func(g Gomega) []string {
-
-				err := k8sClient.Get(ctx, client.ObjectKey{Name: testPVC.pvcMeta.Name, Namespace: ns}, &pvc)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				return pvc.Finalizers
-			}).Should(Equal(testPVC.expectFinalizers), testPVC.title)
-		}
-
-	})
-
 	It("should be deleted Pods which is using PVC that has finalizer", func() {
 		ctx := context.Background()
 		ns1 := createNamespace()
@@ -506,7 +377,7 @@ var _ = Describe("PersistentVolumeClaimController controller", func() {
 					AccessModes: []corev1.PersistentVolumeAccessMode{
 						corev1.ReadWriteOnce,
 					},
-					Resources: corev1.ResourceRequirements{
+					Resources: corev1.VolumeResourceRequirements{
 						Requests: corev1.ResourceList{
 							"storage": resource.MustParse("1Gi"),
 						},

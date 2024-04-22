@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

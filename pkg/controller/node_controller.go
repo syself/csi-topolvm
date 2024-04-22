@@ -1,7 +1,7 @@
 package controller
 
 import (
-	internalController "github.com/topolvm/topolvm/internal/controller"
+	internalController "github.com/syself/csi-topolvm/internal/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

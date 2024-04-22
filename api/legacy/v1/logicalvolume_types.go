@@ -16,6 +16,7 @@ type LogicalVolumeSpec struct {
 
 	Name                string            `json:"name"`
 	NodeName            string            `json:"nodeName"`
+	ProviderID          string            `json:"providerID"`
 	Size                resource.Quantity `json:"size"`
 	DeviceClass         string            `json:"deviceClass,omitempty"`
 	LvcreateOptionClass string            `json:"lvcreateOptionClass,omitempty"`

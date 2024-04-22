@@ -10,7 +10,7 @@ image:
   tag:  # 0.18.1
 
   # image.pullPolicy -- TopoLVM image pullPolicy.
-  pullPolicy:  # Always
+  pullPolicy: Always
 
   # image.pullSecrets -- List of imagePullSecrets.
   pullSecrets: []
@@ -109,7 +109,7 @@ scheduler:
   priorityClassName:
 
   # scheduler.schedulerOptions -- Tune the Node scoring.
-  # ref: https://github.com/topolvm/topolvm/blob/master/deploy/README.md
+  # ref: https://github.com/syself/csi-topolvm/blob/master/deploy/README.md
   schedulerOptions: {}
   #  default-divisor: 1
   #  divisors:
@@ -161,7 +161,8 @@ lvmd:
 
   # lvmd.nodeSelector -- Specify nodeSelector.
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-  nodeSelector: {}
+  nodeSelector:
+    instance.hetzner.cloud/is-root-server: "true"
 
   # lvmd.affinity -- Specify affinity.
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
@@ -287,7 +288,8 @@ node:
 
   # node.nodeSelector -- Specify nodeSelector.
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-  nodeSelector: {}
+  nodeSelector:
+    instance.hetzner.cloud/is-root-server: "true"
 
   # node.affinity -- Specify affinity.
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
@@ -357,7 +359,7 @@ node:
 # CSI controller service
 controller:
   # controller.replicaCount -- Number of replicas for CSI controller service.
-  replicaCount: 2
+  replicaCount: 1
 
   # controller.args -- Arguments to be passed to the command.
   args: []
@@ -375,7 +377,7 @@ controller:
 
   nodeFinalize:
     # controller.nodeFinalize.skipped -- Skip automatic cleanup of PhysicalVolumeClaims when a Node is deleted.
-    skipped: false
+    skipped: true
 
   leaderElection:
     # controller.leaderElection.enabled -- Enable leader election for controller and all sidecars.

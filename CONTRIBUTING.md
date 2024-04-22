@@ -15,9 +15,9 @@ Welcome! We are glad that you want to contribute to our project!
 As you get started, you are in the best position to give us feedback on areas of
 our project that we need help with including:
 
-* Problems found during setting up a new developer environment
-* Gaps in our Quickstart Guide or documentation
-* Bugs in our automation scripts
+- Problems found during setting up a new developer environment
+- Gaps in our Quickstart Guide or documentation
+- Bugs in our automation scripts
 
 If anything doesn't make sense, or doesn't work when you run it, please open a
 bug report and let us know!
@@ -26,16 +26,16 @@ bug report and let us know!
 
 We welcome many different types of contributions including:
 
-* New features
-* Builds, CI/CD
-* Bug fixes
-* Documentation
-* Issue Triage
-* Answering questions on GitHub Discussions
-* Communications / Social Media / Blog Posts
-* Release management
+- New features
+- Builds, CI/CD
+- Bug fixes
+- Documentation
+- Issue Triage
+- Answering questions on GitHub Discussions
+- Communications / Social Media / Blog Posts
+- Release management
 
-Not everything happens through a GitHub pull request. Please [contact us](https://github.com/topolvm/topolvm/discussions)
+Not everything happens through a GitHub pull request. Please [contact us](https://github.com/syself/csi-topolvm/discussions)
 and let's discuss how we can work together.
 
 ## Find an Issue
@@ -49,7 +49,7 @@ your first pull request.
 Sometimes there won’t be any issues with these labels. That’s ok! There is
 likely still something for you to work on. If you want to contribute but you
 don’t know where to start or can't find a suitable issue, you can ask for an
-issue to work on the [Discussions](https://github.com/topolvm/topolvm/discussions).
+issue to work on the [Discussions](https://github.com/syself/csi-topolvm/discussions).
 
 Once you see an issue that you'd like to work on, please post a comment saying
 that you want to work on it. Something like "I want to work on this" is fine.
@@ -58,7 +58,7 @@ that you want to work on it. Something like "I want to work on this" is fine.
 
 The best way to reach us with a question when contributing is to ask on:
 
-* The original github issue
+- The original github issue
 
 ## Pull Request Lifecycle
 
@@ -109,6 +109,7 @@ we suggest preparing a dedicated physical or virtual machine.
 ## Sign Your Commits
 
 ### DCO
+
 Licensing is important to open source projects. It provides some assurances that
 the software will continue to be available based under the terms that the
 author(s) desired. We require that contributors sign off on commits submitted to
@@ -128,7 +129,7 @@ Git has a `-s` command line option to do this automatically:
     git commit -s -m 'This is my commit message'
 
 If you forgot to do this and have not yet pushed your changes to the remote
-repository, you can amend your commit with the sign-off by running 
+repository, you can amend your commit with the sign-off by running
 
     git commit --amend -s
 

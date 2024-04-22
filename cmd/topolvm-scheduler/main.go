@@ -1,6 +1,6 @@
 package main
 
-import "github.com/topolvm/topolvm/cmd/topolvm-scheduler/app"
+import "github.com/syself/csi-topolvm/cmd/topolvm-scheduler/app"
 
 func main() {
 	app.Execute()

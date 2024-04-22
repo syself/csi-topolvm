@@ -9,15 +9,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
-	topolvmlegacyv1 "github.com/topolvm/topolvm/api/legacy/v1"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	testingutil "github.com/topolvm/topolvm/test/util"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
 	"google.golang.org/grpc/codes"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -35,15 +32,18 @@ import (
 
 var scheme = runtime.NewScheme()
 
-var k8sDelegatedClient client.Client
-var k8sAPIReader client.Reader
-var k8sCache cache.Cache
+var (
+	k8sDelegatedClient client.Client
+	k8sAPIReader       client.Reader
+	k8sCache           cache.Cache
+)
 
-var testEnv *envtest.Environment
-var testCtx, testCancel = context.WithCancel(context.Background())
+var (
+	testEnv             *envtest.Environment
+	testCtx, testCancel = context.WithCancel(context.Background())
+)
 
 func TestAPIs(t *testing.T) {
-	testingutil.DoEnvCheck(t)
 	RegisterFailHandler(Fail)
 
 	SetDefaultEventuallyPollingInterval(time.Second)
@@ -69,9 +69,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = topolvmv1.AddToScheme(scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = topolvmlegacyv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
@@ -108,34 +105,13 @@ func currentLV(i int) *topolvmv1.LogicalVolume {
 		Spec: topolvmv1.LogicalVolumeSpec{
 			Name:        fmt.Sprintf("current-%d", i),
 			NodeName:    fmt.Sprintf("node-%d", i),
+			ProviderID:  fmt.Sprintf("providerID-%d", i),
 			DeviceClass: topolvm.DefaultDeviceClassName,
 			Size:        *resource.NewQuantity(1<<30, resource.BinarySI),
 			Source:      fmt.Sprintf("source-%d", i),
 			AccessType:  "rw",
 		},
 		Status: topolvmv1.LogicalVolumeStatus{
-			VolumeID:    fmt.Sprintf("volume-%d", i),
-			Code:        codes.Unknown,
-			Message:     codes.Unknown.String(),
-			CurrentSize: resource.NewQuantity(1<<30, resource.BinarySI),
-		},
-	}
-}
-
-func legacyLV(i int) *topolvmlegacyv1.LogicalVolume {
-	return &topolvmlegacyv1.LogicalVolume{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("legacy-%d", i),
-		},
-		Spec: topolvmlegacyv1.LogicalVolumeSpec{
-			Name:        fmt.Sprintf("legacy-%d", i),
-			NodeName:    fmt.Sprintf("node-%d", i),
-			DeviceClass: topolvm.DefaultDeviceClassName,
-			Size:        *resource.NewQuantity(1<<30, resource.BinarySI),
-			Source:      fmt.Sprintf("source-%d", i),
-			AccessType:  "rw",
-		},
-		Status: topolvmlegacyv1.LogicalVolumeStatus{
 			VolumeID:    fmt.Sprintf("volume-%d", i),
 			Code:        codes.Unknown,
 			Message:     codes.Unknown.String(),
@@ -151,24 +127,4 @@ func setCurrentLVStatus(lv *topolvmv1.LogicalVolume, i int) {
 		Message:     codes.Unknown.String(),
 		CurrentSize: resource.NewQuantity(1<<30, resource.BinarySI),
 	}
-}
-
-func setLegacyLVStatus(lv *topolvmlegacyv1.LogicalVolume, i int) {
-	lv.Status = topolvmlegacyv1.LogicalVolumeStatus{
-		VolumeID:    fmt.Sprintf("volume-%d", i),
-		Code:        codes.Unknown,
-		Message:     codes.Unknown.String(),
-		CurrentSize: resource.NewQuantity(1<<30, resource.BinarySI),
-	}
-}
-
-func convertToCurrent(lv *topolvmlegacyv1.LogicalVolume) *topolvmv1.LogicalVolume {
-	u := &unstructured.Unstructured{}
-	err := k8sDelegatedClient.Scheme().Convert(lv, u, nil)
-	Expect(err).ShouldNot(HaveOccurred())
-	u.SetGroupVersionKind(topolvmv1.GroupVersion.WithKind(kind))
-	current := new(topolvmv1.LogicalVolume)
-	err = k8sDelegatedClient.Scheme().Convert(u, current, nil)
-	Expect(err).ShouldNot(HaveOccurred())
-	return current
 }
