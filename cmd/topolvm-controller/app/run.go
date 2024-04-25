@@ -7,14 +7,13 @@ import (
 	"time"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/topolvm/topolvm"
-	topolvmlegacyv1 "github.com/topolvm/topolvm/api/legacy/v1"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	clientwrapper "github.com/topolvm/topolvm/internal/client"
-	"github.com/topolvm/topolvm/internal/hook"
-	"github.com/topolvm/topolvm/internal/runners"
-	"github.com/topolvm/topolvm/pkg/controller"
-	"github.com/topolvm/topolvm/pkg/driver"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	clientwrapper "github.com/syself/csi-topolvm/internal/client"
+	"github.com/syself/csi-topolvm/internal/hook"
+	"github.com/syself/csi-topolvm/internal/runners"
+	"github.com/syself/csi-topolvm/pkg/controller"
+	"github.com/syself/csi-topolvm/pkg/driver"
 	"google.golang.org/grpc"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +39,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(topolvmv1.AddToScheme(scheme))
-	utilruntime.Must(topolvmlegacyv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

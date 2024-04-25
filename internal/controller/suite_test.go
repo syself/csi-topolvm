@@ -9,7 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,10 +25,12 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-var scheme = runtime.NewScheme()
+var (
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	scheme    = runtime.NewScheme()
+)
 
 var namespaceCounter = 0 // EnvTest cannot delete namespace. So, we have to use another new namespace.
 func createNamespace() string {

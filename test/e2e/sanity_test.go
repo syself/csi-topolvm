@@ -6,7 +6,7 @@ import (
 	"github.com/kubernetes-csi/csi-test/v5/pkg/sanity"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
+	topolvm "github.com/syself/csi-topolvm"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -68,7 +68,7 @@ func testSanity() {
 		}
 
 		thinTC = tc
-		// csi.storage.k8s.io/fstype=xfs,topolvm.(io|cybozu.com)/device-class=thin
+		// csi.storage.k8s.io/fstype=xfs,topolvm.io/device-class=thin
 		thinTC.TestVolumeParameters = map[string]string{
 			"csi.storage.k8s.io/fstype": "xfs",
 			topolvm.GetDeviceClassKey(): "thin",

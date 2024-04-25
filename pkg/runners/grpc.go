@@ -1,7 +1,7 @@
 package runners
 
 import (
-	internalRunners "github.com/topolvm/topolvm/internal/runners"
+	internalRunners "github.com/syself/csi-topolvm/internal/runners"
 )
 
 var NewGRPCRunner = internalRunners.NewGRPCRunner

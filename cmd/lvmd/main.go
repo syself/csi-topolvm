@@ -1,6 +1,6 @@
 package main
 
-import "github.com/topolvm/topolvm/cmd/lvmd/app"
+import "github.com/syself/csi-topolvm/cmd/lvmd/app"
 
 func main() {
 	app.Execute()

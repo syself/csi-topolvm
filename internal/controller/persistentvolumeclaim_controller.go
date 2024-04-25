@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/topolvm/topolvm"
+	topolvm "github.com/syself/csi-topolvm"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -53,17 +53,6 @@ func (r *PersistentVolumeClaimReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, nil
 	default:
 		return ctrl.Result{}, err
-	}
-
-	// Remove deprecated finalizer and requeue.
-	removed, err := r.removeDeprecatedFinalizer(ctx, pvc)
-	if err != nil {
-		log.Error(err, "failed to remove deprecated finalizer", "name", pvc.Name)
-		return ctrl.Result{}, err
-	} else if removed {
-		return ctrl.Result{
-			Requeue: true,
-		}, nil
 	}
 
 	// Skip if the PVC is not deleted or PVC does not have TopoLVM's finalizer.
@@ -145,16 +134,4 @@ func (r *PersistentVolumeClaimReconciler) SetupWithManager(mgr ctrl.Manager) err
 		WithEventFilter(pred).
 		For(&corev1.PersistentVolumeClaim{}).
 		Complete(r)
-}
-
-func (r *PersistentVolumeClaimReconciler) removeDeprecatedFinalizer(ctx context.Context, pvc *corev1.PersistentVolumeClaim) (bool, error) {
-	// Due to the bug #310, multiple TopoLVM finalizers can exist in `pvc.Finalizers`.
-	// So we need to delete all of them.
-	removed := controllerutil.RemoveFinalizer(pvc, topolvm.LegacyPVCFinalizer)
-	if removed {
-		if err := r.client.Update(ctx, pvc); err != nil {
-			return false, err
-		}
-	}
-	return removed, nil
 }

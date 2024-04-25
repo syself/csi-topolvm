@@ -7,8 +7,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -20,7 +20,6 @@ const nsNodeDeleteTest = "node-delete-test"
 var statefulSetTemplateYAML string
 
 func testNodeDelete() {
-
 	BeforeEach(func() {
 		skipIfSingleNode()
 

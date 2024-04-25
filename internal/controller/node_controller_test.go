@@ -8,8 +8,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	storegev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,16 +48,15 @@ var _ = Describe("NodeController controller", func() {
 	})
 
 	setupResources := func(ctx context.Context, suffix string) (
-		corev1.Node, corev1.PersistentVolumeClaim, topolvmv1.LogicalVolume) {
-		node := corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "node" + suffix,
-				Finalizers: []string{
-					topolvm.GetNodeFinalizer(),
-				},
+		corev1.Node, corev1.PersistentVolumeClaim, topolvmv1.LogicalVolume,
+	) {
+		nodeObj := corev1.Node{
+			ObjectMeta: metav1.ObjectMeta{Name: "node" + suffix, Finalizers: []string{topolvm.GetNodeFinalizer()}},
+			Spec: corev1.NodeSpec{
+				ProviderID: "providerID" + suffix,
 			},
 		}
-		err := k8sClient.Create(ctx, &node)
+		err := k8sClient.Create(ctx, &nodeObj)
 		Expect(err).NotTo(HaveOccurred())
 
 		sc := storegev1.StorageClass{
@@ -74,16 +73,13 @@ var _ = Describe("NodeController controller", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pvc" + suffix,
 				Namespace: ns,
-				Annotations: map[string]string{
-					AnnSelectedNode: node.Name,
-				},
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
 				StorageClassName: &sc.Name,
 				AccessModes: []corev1.PersistentVolumeAccessMode{
 					corev1.ReadWriteOnce,
 				},
-				Resources: corev1.ResourceRequirements{
+				Resources: corev1.VolumeResourceRequirements{
 					Requests: corev1.ResourceList{
 						corev1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
 					},
@@ -98,13 +94,14 @@ var _ = Describe("NodeController controller", func() {
 				Name: "lv" + suffix,
 			},
 			Spec: topolvmv1.LogicalVolumeSpec{
-				NodeName: node.Name,
+				NodeName:   nodeObj.Name,
+				ProviderID: nodeObj.Spec.ProviderID,
 			},
 		}
 		err = k8sClient.Create(ctx, &lv)
 		Expect(err).NotTo(HaveOccurred())
 
-		return node, pvc, lv
+		return nodeObj, pvc, lv
 	}
 
 	It("should delete PVC and LogicalVolume when the node is deleted if the finalizer is not skipped", func() {

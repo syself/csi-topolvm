@@ -7,9 +7,9 @@ import (
 	"math"
 	"sync"
 
-	"github.com/topolvm/topolvm/internal/lvmd/command"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	"github.com/syself/csi-topolvm/internal/lvmd/command"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"sigs.k8s.io/controller-runtime/pkg/log"

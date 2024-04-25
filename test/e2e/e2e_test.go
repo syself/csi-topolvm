@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
-	"github.com/topolvm/topolvm"
-	topolvmv1 "github.com/topolvm/topolvm/api/v1"
-	"github.com/topolvm/topolvm/cmd/topolvm-controller/app"
+	topolvm "github.com/syself/csi-topolvm"
+	topolvmv1 "github.com/syself/csi-topolvm/api/v1"
+	"github.com/syself/csi-topolvm/cmd/topolvm-controller/app"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )

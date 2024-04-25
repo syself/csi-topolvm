@@ -113,7 +113,7 @@ node:
 ### Run LVMd as a Systemd Service
 
 Before setup, you need to get LMVd binary.
-We provide pre-built binaries in the [releases page](https://github.com/topolvm/topolvm/releases) for x86 architecture.
+We provide pre-built binaries in the [releases page](https://github.com/syself/csi-topolvm/releases) for x86 architecture.
 If you use other architecture or want to build it from source code, you can build it by `mkdir build; go build -o build/lvmd ./pkg/lvmd`.
 
 To setup LVMd as a systemd service:
@@ -176,7 +176,7 @@ The default method is using cert-manager described in [Getting Started](getting-
 
 If you don't want to use cert-manager, you can use your own certificates as follows:
 
-1. Prepare PEM encoded self-signed certificate and key files.  
+1. Prepare PEM encoded self-signed certificate and key files.
    The certificate must be valid for hostname like `topolvm-controller.topolvm-system.svc`.
 2. Base64-encode the CA cert (in its PEM format)
 3. Create Secret in `topolvm-system` namespace as follows:

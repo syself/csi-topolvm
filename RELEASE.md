@@ -39,7 +39,7 @@ The result should look something like:
 Bump version
 ------------
 
-1. Determine a new version number by [checking the differences](https://github.com/topolvm/topolvm/compare/vX.Y.Z...main) since the last release. Then, define the `VERSION` variable.
+1. Determine a new version number by [checking the differences](https://github.com/syself/csi-topolvm/compare/vX.Y.Z...main) since the last release. Then, define the `VERSION` variable.
 
     ```console
     VERSION=1.2.3
@@ -58,9 +58,9 @@ Bump version
    creates a draft release note for the tagged version,
    builds a tar archive for the new release,
    and attaches it to the release note.
-   
-   Visit https://github.com/topolvm/topolvm/releases to check
-   the result. 
+
+   Visit <https://github.com/syself/csi-topolvm/releases> to check
+   the result.
 
 4. Edit the auto-generated release note
    and remove PRs which contain changes only to the helm chart.
@@ -72,15 +72,15 @@ Bump Chart Version
 TopoLVM Helm Chart will be released independently.
 This will prevent the TopoLVM version from going up just by modifying the Helm Chart.
 
-1. Determine a new version number by [checking the differences](https://github.com/topolvm/topolvm/compare/topolvm-chart-vX.Y.Z...main) since the last release. Then, manually run the workflow to create a PR to update the Helm Chart.
+1. Determine a new version number by [checking the differences](https://github.com/syself/csi-topolvm/compare/topolvm-chart-vX.Y.Z...main) since the last release. Then, manually run the workflow to create a PR to update the Helm Chart.
 
-   https://github.com/topolvm/topolvm/actions/workflows/create-chart-update-pr.yaml
+   <https://github.com/syself/csi-topolvm/actions/workflows/create-chart-update-pr.yaml>
 
 2. Review and merge the auto-created PR.
 
 3. Manually run the GitHub Actions workflow for the release.
 
-   https://github.com/topolvm/topolvm/actions/workflows/helm-release.yaml
+   <https://github.com/syself/csi-topolvm/actions/workflows/helm-release.yaml>
 
    When you run workflow, [helm/chart-releaser-action](https://github.com/helm/chart-releaser-action) will automatically create a GitHub Release.
 
@@ -90,5 +90,4 @@ This will prevent the TopoLVM version from going up just by modifying the Helm C
    3. Remove PRs which do not contain changes to the helm chart.
 
 [semver]: https://semver.org/spec/v2.0.0.html
-[example]: https://github.com/cybozu-go/etcdpasswd/commit/77d95384ac6c97e7f48281eaf23cb94f68867f79
-[GitHub Actions]: https://github.com/topolvm/topolvm/actions
+[GitHub Actions]: https://github.com/syself/csi-topolvm/actions

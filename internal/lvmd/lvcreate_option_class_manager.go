@@ -1,7 +1,7 @@
 package lvmd
 
 import (
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 )
 
 type LvcreateOptionClassManager struct {

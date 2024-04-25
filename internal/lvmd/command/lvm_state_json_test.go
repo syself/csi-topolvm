@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr/testr"
-	"github.com/topolvm/topolvm/internal/lvmd/testutils"
+	"github.com/syself/csi-topolvm/internal/lvmd/testutils"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -63,7 +63,6 @@ func TestLvmJSON(t *testing.T) {
 	  }
 	`
 	vgs, lvs, err := parseFullReportResult(io.NopCloser(strings.NewReader(goodJSON)))
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +218,6 @@ func TestLvmInactiveMajorMinor(t *testing.T) {
 	}
   `
 	vgs, lvs, err := parseFullReportResult(io.NopCloser(strings.NewReader(inactiveMajorMinor)))
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +281,6 @@ func TestLvmJSONBad(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected an err, got none")
 	}
-
 }
 
 func TestLvmRetrieval(t *testing.T) {
@@ -308,7 +305,6 @@ func TestLvmRetrieval(t *testing.T) {
 	defer testutils.CleanLoopbackVG(vgName, []string{loop}, []string{vgName})
 
 	vgs, lvs, err := getLVMState(ctx)
-
 	if err != nil {
 		t.Fatal("Unexpected err returned: ", err)
 	}

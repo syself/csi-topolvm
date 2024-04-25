@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/topolvm/topolvm"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
+	topolvm "github.com/syself/csi-topolvm"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"

@@ -5,15 +5,17 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/topolvm/topolvm"
+	topolvm "github.com/syself/csi-topolvm"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ErrNodeNotFound represents the error that node is not found.
-var ErrNodeNotFound = errors.New("node not found")
-var ErrDeviceClassNotFound = errors.New("device class not found")
+var (
+	ErrNodeNotFound        = errors.New("node not found")
+	ErrDeviceClassNotFound = errors.New("device class not found")
+)
 
 // NodeService represents node service.
 type NodeService struct {
@@ -59,16 +61,16 @@ func (s NodeService) GetCapacityByName(ctx context.Context, name, deviceClass st
 	return s.extractCapacityFromAnnotation(n, deviceClass)
 }
 
-// GetCapacityByTopologyLabel returns VG capacity of specified node by TopoLVM's topology label.
-func (s NodeService) GetCapacityByTopologyLabel(ctx context.Context, topology, dc string) (int64, error) {
+// GetCapacityByTopologyLabel returns VG capacity of specified node by TopoLVM's providerID label.
+func (s NodeService) GetCapacityByTopologyLabel(ctx context.Context, providerID, dc string) (int64, error) {
 	nl, err := s.getNodes(ctx)
 	if err != nil {
 		return 0, err
 	}
 
 	for _, node := range nl.Items {
-		if v, ok := node.Labels[topolvm.GetTopologyNodeKey()]; ok {
-			if v != topology {
+		if v, ok := node.Labels[topolvm.ProviderIDLabel]; ok {
+			if v != providerID {
 				continue
 			}
 			return s.extractCapacityFromAnnotation(&node, dc)

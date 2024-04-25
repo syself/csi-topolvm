@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/topolvm/topolvm"
+	topolvm "github.com/syself/csi-topolvm"
 )
 
 const (
@@ -205,8 +205,8 @@ func (vg *VolumeGroup) convertLV(lv lv) *LogicalVolume {
 // list of tags to add to the volume.
 // lvcreateOptions are additional arguments to pass to lvcreate.
 func (vg *VolumeGroup) CreateVolume(ctx context.Context, name string, size uint64, tags []string, stripe uint, stripeSize string,
-	lvcreateOptions []string) error {
-
+	lvcreateOptions []string,
+) error {
 	if size%uint64(topolvm.MinimumSectorSize) != 0 {
 		return ErrNoMultipleOfSectorSize
 	}

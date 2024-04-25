@@ -63,7 +63,7 @@ func (settings MinimumAllocationSettings) MinMaxAllocationsFromSettings(
 	minimumSize := settings.GetMinimumAllocationSize(capabilities)
 
 	if minimumSize.CmpInt64(required) > 0 {
-		ctrlLogger.Info("required size is less than minimum size, "+
+		logger.Info("required size is less than minimum size, "+
 			"using minimum size as required size", "required", required, "minimum", minimumSize.Value())
 		required = minimumSize.Value()
 	}

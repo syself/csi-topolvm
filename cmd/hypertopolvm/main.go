@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	lvmd "github.com/topolvm/topolvm/cmd/lvmd/app"
-	controller "github.com/topolvm/topolvm/cmd/topolvm-controller/app"
-	node "github.com/topolvm/topolvm/cmd/topolvm-node/app"
-	scheduler "github.com/topolvm/topolvm/cmd/topolvm-scheduler/app"
+	lvmd "github.com/syself/csi-topolvm/cmd/lvmd/app"
+	controller "github.com/syself/csi-topolvm/cmd/topolvm-controller/app"
+	node "github.com/syself/csi-topolvm/cmd/topolvm-node/app"
+	scheduler "github.com/syself/csi-topolvm/cmd/topolvm-scheduler/app"
 )
 
 func usage() {

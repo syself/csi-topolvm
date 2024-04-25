@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/topolvm/topolvm"
-	"github.com/topolvm/topolvm/internal/lvmd"
-	"github.com/topolvm/topolvm/internal/lvmd/command"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	topolvm "github.com/syself/csi-topolvm"
+	"github.com/syself/csi-topolvm/internal/lvmd"
+	"github.com/syself/csi-topolvm/internal/lvmd/command"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"k8s.io/klog/v2"
@@ -25,8 +25,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-var cfgFilePath string
-var zapOpts zap.Options
+var (
+	cfgFilePath string
+	zapOpts     zap.Options
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

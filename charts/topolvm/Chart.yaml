@@ -1,13 +1,13 @@
 apiVersion: v2
 type: application
 
-home: https://github.com/topolvm/topolvm
+home: https://github.com/syself/csi-topolvm
 name: topolvm
 description: Topolvm
 version: 14.1.1
 appVersion: 0.28.0
 sources:
-  - https://github.com/topolvm/topolvm
+  - https://github.com/syself/csi-topolvm
 
 dependencies:
   - name: cert-manager

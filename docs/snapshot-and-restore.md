@@ -1,12 +1,13 @@
 # Snapshot and Restore
 
-See also [the proposal of the functionality](https://github.com/topolvm/topolvm/blob/main/docs/proposals/thin-snapshots-restore.md).
+See also [the proposal of the functionality](https://github.com/syself/csi-topolvm/blob/main/docs/proposals/thin-snapshots-restore.md).
 
 ## Getting Started
 
 ### Prerequisites
 
 You need to create a thin pool of LVM beforehand, because TopoLVM doesn't create one. For example:
+
 ```
 lvcreate -T -n pool0 -L 4G myvg1
 ```
@@ -16,6 +17,7 @@ You also need to install the CRDs and the controller for volume snapshots. Pleas
 ### Set up a Device Class
 
 Change your lvmd settings to use the thin pool you've created. For example, if you are using the Helm charts, modify your values.yaml as follows:
+
 ```yaml
 lvmd:
   deviceClasses:
@@ -33,6 +35,7 @@ lvmd:
 ### Set up a Storage Class
 
 Create a storage class for the DeviceClass for the thin pool. For example, if you are using the Helm charts, modify your values.yaml as follows:
+
 ```yaml
 storageClasses:
   # ...
@@ -50,7 +53,7 @@ storageClasses:
 
 ### Deploy TopoLVM
 
-Deploy TopoLVM with the settings you updated above. See also the [Getting Started](https://github.com/topolvm/topolvm/blob/main/docs/getting-started.md) guide.
+Deploy TopoLVM with the settings you updated above. See also the [Getting Started](https://github.com/syself/csi-topolvm/blob/main/docs/getting-started.md) guide.
 
 Run the following command to deploy `my-pvc` and `my-pod`, which use `topolvm-provisioner-thin`.
 
@@ -92,6 +95,7 @@ EOF
 ```
 
 Write some data to the volume:
+
 ```sh
 $ kubectl exec -it my-pod -- bash
 root@my-pod:/# echo hello > /data/world
@@ -177,6 +181,7 @@ EOF
 ```
 
 And check the content of the volume:
+
 ```sh
 $ kubectl exec -it my-pod2 -- cat /data/world
 hello
@@ -184,5 +189,5 @@ hello
 
 ## See Also
 
-- [The proposal of the functionality](https://github.com/topolvm/topolvm/blob/main/docs/proposals/thin-snapshots-restore.md)
+- [The proposal of the functionality](https://github.com/syself/csi-topolvm/blob/main/docs/proposals/thin-snapshots-restore.md)
 - Issue [#827](https://github.com/topolvm/topolvm/issues/827)

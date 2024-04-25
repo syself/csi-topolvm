@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/topolvm/topolvm"
-	lvmd "github.com/topolvm/topolvm/cmd/lvmd/app"
+	topolvm "github.com/syself/csi-topolvm"
+	lvmd "github.com/syself/csi-topolvm/cmd/lvmd/app"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )

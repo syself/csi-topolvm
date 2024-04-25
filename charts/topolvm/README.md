@@ -7,7 +7,7 @@
 
 ## Installation
 
-See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.1.1/docs/getting-started.md).
+See [Getting Started](https://github.com/syself/csi-topolvm/blob/topolvm-chart-v14.1.1/docs/getting-started.md).
 
 ## Values
 
@@ -16,11 +16,12 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | cert-manager.enabled | bool | `false` | Install cert-manager together. # ref: https://cert-manager.io/docs/installation/kubernetes/#installing-with-helm |
 | controller.affinity | string | `"podAntiAffinity:\n  requiredDuringSchedulingIgnoredDuringExecution:\n    - labelSelector:\n        matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n              - controller\n          - key: app.kubernetes.io/name\n            operator: In\n            values:\n              - {{ include \"topolvm.name\" . }}\n      topologyKey: kubernetes.io/hostname\n"` | Specify affinity. # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity |
 | controller.args | list | `[]` | Arguments to be passed to the command. |
+| controller.attachRequired.enabled | bool | `true` |  |
 | controller.initContainers | list | `[]` | Additional initContainers for the controller service. |
 | controller.labels | object | `{}` | Additional labels to be added to the Deployment. |
 | controller.leaderElection.enabled | bool | `true` | Enable leader election for controller and all sidecars. |
 | controller.minReadySeconds | int | `nil` | Specify minReadySeconds. |
-| controller.nodeFinalize.skipped | bool | `false` | Skip automatic cleanup of PhysicalVolumeClaims when a Node is deleted. |
+| controller.nodeFinalize.skipped | bool | `true` | Skip automatic cleanup of PhysicalVolumeClaims when a Node is deleted. |
 | controller.nodeSelector | object | `{}` | Specify nodeSelector. # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ |
 | controller.podDisruptionBudget.enabled | bool | `true` | Specify podDisruptionBudget enabled. |
 | controller.podLabels | object | `{}` | Additional labels to be set on the controller pod. |
@@ -32,7 +33,7 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | controller.prometheus.podMonitor.namespace | string | `""` | Optional namespace in which to create PodMonitor. |
 | controller.prometheus.podMonitor.relabelings | list | `[]` | RelabelConfigs to apply to samples before scraping. |
 | controller.prometheus.podMonitor.scrapeTimeout | string | `""` | Scrape timeout. If not set, the Prometheus default scrape timeout is used. |
-| controller.replicaCount | int | `2` | Number of replicas for CSI controller service. |
+| controller.replicaCount | int | `1` | Number of replicas for CSI controller service. |
 | controller.securityContext.enabled | bool | `true` | Enable securityContext. |
 | controller.storageCapacityTracking.enabled | bool | `true` | Enable Storage Capacity Tracking for csi-provisioner. |
 | controller.terminationGracePeriodSeconds | int | `nil` | Specify terminationGracePeriodSeconds. |
@@ -47,12 +48,13 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | env.topolvm_controller | list | `[]` | Specify environment variables for topolvm_controller container. |
 | env.topolvm_node | list | `[]` | Specify environment variables for topolvm_node container. |
 | env.topolvm_scheduler | list | `[]` | Specify environment variables for topolvm_scheduler container. |
+| image.csi.csiAttacher | string | `"registry.k8s.io/sig-storage/csi-attacher:v4.5.1"` | Specify csi-attacher image. If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used. |
 | image.csi.csiProvisioner | string | `nil` | Specify csi-provisioner image. If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used. |
 | image.csi.csiResizer | string | `nil` | Specify csi-resizer image. If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used. |
 | image.csi.csiSnapshotter | string | `nil` | Specify csi-snapshot image. If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used. |
 | image.csi.livenessProbe | string | `nil` | Specify livenessprobe image. If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used. |
 | image.csi.nodeDriverRegistrar | string | `nil` | Specify csi-node-driver-registrar: image. If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used. |
-| image.pullPolicy | string | `nil` | TopoLVM image pullPolicy. |
+| image.pullPolicy | string | `"Always"` | TopoLVM image pullPolicy. |
 | image.pullSecrets | list | `[]` | List of imagePullSecrets. |
 | image.repository | string | `"ghcr.io/topolvm/topolvm-with-sidecar"` | TopoLVM image repository to use. |
 | image.tag | string | `{{ .Chart.AppVersion }}` | TopoLVM image tag to use. |
@@ -71,7 +73,7 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | lvmd.labels | object | `{}` | Additional labels to be added to the Daemonset. |
 | lvmd.lvcreateOptionClasses | list | `[]` | Specify the lvcreate-option-class settings. |
 | lvmd.managed | bool | `true` | If true, set up lvmd service with DaemonSet. |
-| lvmd.nodeSelector | object | `{}` | Specify nodeSelector. # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ |
+| lvmd.nodeSelector | object | `{"instance.hetzner.cloud/is-root-server":"true"}` | Specify nodeSelector. # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ |
 | lvmd.podLabels | object | `{}` | Additional labels to be set on the lvmd service pods. |
 | lvmd.priorityClassName | string | `nil` | Specify priorityClassName. |
 | lvmd.socketName | string | `"/run/topolvm/lvmd.sock"` | Specify socketName. |
@@ -89,7 +91,7 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | node.lvmdSocket | string | `"/run/topolvm/lvmd.sock"` | Specify the socket to be used for communication with lvmd. |
 | node.metrics.annotations | object | `{"prometheus.io/port":"metrics"}` | Annotations for Scrape used by Prometheus. |
 | node.metrics.enabled | bool | `true` | If true, enable scraping of metrics by Prometheus. |
-| node.nodeSelector | object | `{}` | Specify nodeSelector. # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ |
+| node.nodeSelector | object | `{"instance.hetzner.cloud/is-root-server":"true"}` | Specify nodeSelector. # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ |
 | node.podLabels | object | `{}` | Additional labels to be set on the node pods. |
 | node.priorityClassName | string | `nil` | Specify priorityClassName. |
 | node.prometheus.podMonitor.additionalLabels | object | `{}` | Additional labels that can be used so PodMonitor will be discovered by Prometheus. |
@@ -107,6 +109,7 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | priorityClass.enabled | bool | `true` | Install priorityClass. |
 | priorityClass.name | string | `"topolvm"` | Specify priorityClass resource name. |
 | priorityClass.value | int | `1000000` |  |
+| resources.csi_attacher | object | `{}` | Specify resources. # ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
 | resources.csi_provisioner | object | `{}` | Specify resources. # ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
 | resources.csi_registrar | object | `{}` | Specify resources. # ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
 | resources.csi_resizer | object | `{}` | Specify resources. # ref: https://kubernetes.io/docs/user-guide/compute-resources/ |
@@ -128,7 +131,7 @@ See [Getting Started](https://github.com/topolvm/topolvm/blob/topolvm-chart-v14.
 | scheduler.podDisruptionBudget.enabled | bool | `true` | Specify podDisruptionBudget enabled. |
 | scheduler.podLabels | object | `{}` | Additional labels to be set on the scheduler pods. |
 | scheduler.priorityClassName | string | `nil` | Specify priorityClassName on the Deployment or DaemonSet. |
-| scheduler.schedulerOptions | object | `{}` | Tune the Node scoring. ref: https://github.com/topolvm/topolvm/blob/master/deploy/README.md |
+| scheduler.schedulerOptions | object | `{}` | Tune the Node scoring. ref: https://github.com/syself/csi-topolvm/blob/master/deploy/README.md |
 | scheduler.service.clusterIP | string | `nil` | Specify Service clusterIP. |
 | scheduler.service.nodePort | int | `nil` | Specify nodePort. |
 | scheduler.service.type | string | `"LoadBalancer"` | Specify Service type. |

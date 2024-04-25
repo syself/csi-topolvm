@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr/testr"
-	"github.com/topolvm/topolvm/internal/lvmd/command"
-	"github.com/topolvm/topolvm/internal/lvmd/testutils"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	"github.com/syself/csi-topolvm/internal/lvmd/command"
+	"github.com/syself/csi-topolvm/internal/lvmd/testutils"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 	"google.golang.org/grpc/metadata"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -59,23 +59,26 @@ func testWatch(t *testing.T) {
 		name          string
 		deviceClasses []*lvmdTypes.DeviceClass
 	}{
-
-		{"volumegroup", []*lvmdTypes.DeviceClass{
-			{
-				Name:        "dc",
-				VolumeGroup: "test_vgservice",
-			}},
-		},
-		{"thinpool", []*lvmdTypes.DeviceClass{
-			{
-				Name:        "dc",
-				VolumeGroup: "test_vgservice",
-				Type:        lvmdTypes.TypeThin,
-				ThinPoolConfig: &lvmdTypes.ThinPoolConfig{
-					Name:               "test_pool",
-					OverprovisionRatio: overprovisionRatio,
+		{
+			"volumegroup", []*lvmdTypes.DeviceClass{
+				{
+					Name:        "dc",
+					VolumeGroup: "test_vgservice",
 				},
-			}},
+			},
+		},
+		{
+			"thinpool", []*lvmdTypes.DeviceClass{
+				{
+					Name:        "dc",
+					VolumeGroup: "test_vgservice",
+					Type:        lvmdTypes.TypeThin,
+					ThinPoolConfig: &lvmdTypes.ThinPoolConfig{
+						Name:               "test_pool",
+						OverprovisionRatio: overprovisionRatio,
+					},
+				},
+			},
 		},
 	}
 
@@ -144,7 +147,6 @@ func testWatch(t *testing.T) {
 			case <-time.After(waitDuration * time.Second):
 				t.Fatal("not done")
 			}
-
 		})
 	}
 }
@@ -416,7 +418,6 @@ func testVGService(t *testing.T, vg *command.VolumeGroup) {
 		// Remove thin volumes
 		_ = vg.RemoveVolume(ctx, testp3Vol.Name())
 		_ = vg.RemoveVolume(ctx, testp4Vol.Name())
-
 	})
 }
 

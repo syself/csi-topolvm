@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/topolvm/topolvm"
+	topolvm "github.com/syself/csi-topolvm"
 )
 
 func Test_convertRequestCapacityBytes(t *testing.T) {

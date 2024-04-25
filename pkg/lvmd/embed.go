@@ -3,9 +3,9 @@ package lvmd
 import (
 	"context"
 
-	internalLvmd "github.com/topolvm/topolvm/internal/lvmd"
-	"github.com/topolvm/topolvm/pkg/lvmd/proto"
-	lvmdTypes "github.com/topolvm/topolvm/pkg/lvmd/types"
+	internalLvmd "github.com/syself/csi-topolvm/internal/lvmd"
+	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	lvmdTypes "github.com/syself/csi-topolvm/pkg/lvmd/types"
 )
 
 func NewEmbeddedServiceClients(ctx context.Context, deviceClasses []*lvmdTypes.DeviceClass, LvcreateOptionClasses []*lvmdTypes.LvcreateOptionClass) (
