@@ -46,7 +46,7 @@ func GetNodeByProviderID(ctx context.Context, kubeClient client.Client, provider
 
 // GetProviderIDByNodeName gets the ProviderID from corresponding label of the node
 func GetProviderIDByNodeName(ctx context.Context, kubeClient client.Client, nodeName string) (string, error) {
-	kubeNode, err := getNodeByName(ctx, kubeClient, nodeName)
+	kubeNode, err := GetNodeByName(ctx, kubeClient, nodeName)
 	if err != nil {
 		return "", fmt.Errorf("GetNodeByName failed: %w", err)
 	}
@@ -88,9 +88,9 @@ func sanitizeProviderIDLabelValue(input string) string {
 	return transformed
 }
 
-// getNodeByName returns the Node by name.
-func getNodeByName(ctx context.Context, kubeClient client.Client, nodeName string) (*corev1.Node, error) {
-	node := &corev1.Node{}
+// GetNodeByName returns the Node by name.
+func GetNodeByName(ctx context.Context, kubeClient client.Client, nodeName string) (*corev1.Node, error) {
+	nodeObj := &corev1.Node{}
 	nn := types.NamespacedName{Name: nodeName}
 
 	logger := log.FromContext(ctx)
@@ -101,15 +101,16 @@ func getNodeByName(ctx context.Context, kubeClient client.Client, nodeName strin
 		Jitter:   0.1,
 	},
 		func(err error) bool {
-			logger.Info("getNodeByName failed, retrying",
+			logger.Info("getNodeByName failed, retrying (just info)",
 				"err", err,
-				"stack", string(debug.Stack()))
+				"stack", string(debug.Stack()),
+			)
 			return true
 		}, func() error {
-			return kubeClient.Get(ctx, nn, node)
+			return kubeClient.Get(ctx, nn, nodeObj)
 		})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get node %q: %w", nodeName, err)
 	}
-	return node, nil
+	return nodeObj, nil
 }

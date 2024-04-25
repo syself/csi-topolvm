@@ -3,11 +3,11 @@ useLegacy: false
 
 image:
   # image.repository -- TopoLVM image repository to use.
-  repository: ghcr.io/topolvm/topolvm-with-sidecar
+  repository: ghcr.io/syself/csi-topolvm-with-sidecar
 
   # image.tag -- TopoLVM image tag to use.
   # @default -- `{{ .Chart.AppVersion }}`
-  tag:  # 0.18.1
+  tag: latest # 0.18.1
 
   # image.pullPolicy -- TopoLVM image pullPolicy.
   pullPolicy: Always

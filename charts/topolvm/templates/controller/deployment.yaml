@@ -48,7 +48,7 @@ spec:
       {{- end }}
       containers:
         - name: topolvm-controller
-          image: ghcr.io/syself/csi-topolvm:latest # "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           command:
             - /topolvm-controller
             {{ if not .Values.controller.leaderElection.enabled }}

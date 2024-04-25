@@ -20,6 +20,7 @@ import (
 	"github.com/syself/csi-topolvm/pkg/driver"
 	"github.com/syself/csi-topolvm/pkg/lvmd"
 	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
+	"github.com/syself/csi-topolvm/pkg/node"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -28,8 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -54,8 +56,8 @@ func init() {
 func subMain(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	nodename := viper.GetString("nodename")
-	if nodename == "" {
+	nodeName := viper.GetString("nodename")
+	if nodeName == "" {
 		return errors.New("node name is not given")
 	}
 
@@ -110,7 +112,21 @@ func subMain(ctx context.Context) error {
 		health = grpc_health_v1.NewHealthClient(conn)
 	}
 
-	if err := controller.SetupLogicalVolumeReconcilerWithServices(mgr, client, nodename, vgService, lvService); err != nil {
+	uncachedClient, err := ctrClient.New(mgr.GetConfig(), ctrClient.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
+	if err != nil {
+		return fmt.Errorf("GetProviderID failed to create uncachedClient %q: %w", nodeName, err)
+	}
+	providerID, err := node.GetProviderIDByNodeName(context.Background(), uncachedClient, nodeName)
+	if err != nil {
+		return fmt.Errorf("GetProviderID failed for node %q: %w", nodeName, err)
+	}
+
+	err = updateNodeSetProviderID(ctx, uncachedClient, nodeName, providerID)
+	if err != nil {
+		return err
+	}
+
+	if err := controller.SetupLogicalVolumeReconcilerWithServices(mgr, client, nodeName, providerID, vgService, lvService); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "LogicalVolume")
 		return err
 	}
@@ -125,7 +141,7 @@ func subMain(ctx context.Context) error {
 	// Add metrics exporter to manager.
 	// Note that grpc.ClientConn can be shared with multiple stubs/services.
 	// https://github.com/grpc/grpc-go/tree/master/examples/features/multiplex
-	if err := mgr.Add(runners.NewMetricsExporter(vgService, client, nodename)); err != nil { // adjusted signature
+	if err := mgr.Add(runners.NewMetricsExporter(vgService, client, nodeName)); err != nil { // adjusted signature
 		return err
 	}
 
@@ -135,7 +151,7 @@ func subMain(ctx context.Context) error {
 	}
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(ErrorLoggingInterceptor))
 	csi.RegisterIdentityServer(grpcServer, driver.NewIdentityServer(checker.Ready))
-	nodeServer, err := driver.NewNodeServer(nodename, vgService, lvService, mgr) // adjusted signature
+	nodeServer, err := driver.NewNodeServer(nodeName, providerID, vgService, lvService, mgr) // adjusted signature
 	if err != nil {
 		return err
 	}
@@ -165,7 +181,7 @@ func subMain(ctx context.Context) error {
 
 //+kubebuilder:rbac:groups=storage.k8s.io,resources=csidrivers,verbs=get;list;watch
 
-func checkFunc(health grpc_health_v1.HealthClient, r client.Reader) func() error {
+func checkFunc(health grpc_health_v1.HealthClient, r ctrClient.Reader) func() error {
 	return func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -206,5 +222,35 @@ func loadConfFile(ctx context.Context, cfgFilePath string) error {
 		"device_classes", config.lvmd.DeviceClasses,
 		"file_name", cfgFilePath,
 	)
+	return nil
+}
+
+func updateNodeSetProviderID(ctx context.Context, client ctrClient.Client, nodeName string, providerID string) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	err := retry.RetryOnConflict(retry.DefaultRetry,
+		func() error {
+			nodeObj, err := node.GetNodeByName(context.Background(), client, nodeName)
+			if err != nil {
+				return fmt.Errorf("GetNodeByName failed in updateNodeSetProviderID: %w", err)
+			}
+			existingId := nodeObj.Labels[topolvm.ProviderIDLabel]
+			if existingId == providerID {
+				log.Info(fmt.Sprintf("########syself no need to update label %s=%s on node %s (already set)",
+					topolvm.ProviderIDLabel, providerID, nodeName))
+				return nil
+			}
+			nodeObj.Labels[topolvm.ProviderIDLabel] = providerID
+			err = client.Update(ctx, nodeObj)
+			if err != nil {
+				return fmt.Errorf("failed to update node (set Label) in updateNodeSetProviderID: %w", err)
+			}
+			log.Info(fmt.Sprintf("########syself successfully updated label %s=%s on node %s",
+				topolvm.ProviderIDLabel, providerID, nodeName))
+			return nil
+		})
+	if err != nil {
+		return fmt.Errorf("failed to get node %q in updateNodeSetProviderID: %w", nodeName, err)
+	}
 	return nil
 }

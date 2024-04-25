@@ -219,7 +219,6 @@ multi-platform-image-normal:
 multi-platform-image-with-sidecar:
 	mkdir -p build
 	docker buildx build --no-cache $(BUILDX_PUSH_OPTIONS) \
-		--platform linux/amd64,linux/arm64/v8,linux/ppc64le \
 		-t $(IMAGE_PREFIX)topolvm-with-sidecar:$(IMAGE_TAG) \
 		--build-arg TOPOLVM_VERSION=$(TOPOLVM_VERSION) \
 		--target topolvm-with-sidecar \

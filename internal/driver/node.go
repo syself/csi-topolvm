@@ -2,7 +2,6 @@ package driver
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -15,7 +14,6 @@ import (
 	"github.com/syself/csi-topolvm/internal/driver/internal/k8s"
 	"github.com/syself/csi-topolvm/internal/filesystem"
 	"github.com/syself/csi-topolvm/pkg/lvmd/proto"
-	"github.com/syself/csi-topolvm/pkg/node"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,16 +33,12 @@ const (
 var nodeLogger = ctrl.Log.WithName("driver").WithName("node")
 
 // NewNodeServer returns a new NodeServer.
-func NewNodeServer(nodeName string, vgServiceClient proto.VGServiceClient, lvServiceClient proto.LVServiceClient, mgr manager.Manager) (csi.NodeServer, error) {
+func NewNodeServer(nodeName string, providerID string, vgServiceClient proto.VGServiceClient, lvServiceClient proto.LVServiceClient, mgr manager.Manager) (csi.NodeServer, error) {
 	lvService, err := k8s.NewLogicalVolumeService(mgr)
 	if err != nil {
 		return nil, err
 	}
 
-	providerID, err := node.GetProviderIDByNodeName(context.Background(), mgr.GetClient(), nodeName)
-	if err != nil {
-		return nil, fmt.Errorf("GetProviderID failed for node %q in NewNodeServer: %w", nodeName, err)
-	}
 	return &nodeServer{
 		server: &nodeServerNoLocked{
 			nodeName:     nodeName,
