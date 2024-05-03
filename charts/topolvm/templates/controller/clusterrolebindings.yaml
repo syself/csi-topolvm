@@ -27,6 +27,23 @@ roleRef:
   kind: ClusterRole
   name: {{ .Release.Namespace }}-external-provisioner-runner
   apiGroup: rbac.authorization.k8s.io
+{{ if .Values.controller.attachRequired.enabled }}
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Release.Namespace }}-csi-attacher-role
+  labels:
+    {{- include "topolvm.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    namespace: {{ .Release.Namespace }}
+    name: {{ template "topolvm.fullname" . }}-controller
+roleRef:
+  kind: ClusterRole
+  name: {{ .Release.Namespace }}-external-attacher-runner
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

@@ -1,0 +1,65 @@
+# to start topolvm
+#
+# kubectl create namespace topolvm-system
+#
+## from https://github.com/topolvm/topolvm/blob/main/docs/getting-started.md#install-instructions
+# kubectl label namespace topolvm-system topolvm.io/webhook=ignore
+# kubectl label namespace kube-system topolvm.io/webhook=ignore
+#
+## install cert-manager
+# helm repo add jetstack https://charts.jetstack.io --force-update
+# helm repo update
+# kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.crds.yaml
+# helm install \
+#  cert-manager jetstack/cert-manager \
+#  --namespace cert-manager \
+#  --create-namespace \
+#  --version v1.14.5 \
+##
+# helm install -f values.yaml --namespace=topolvm-system topolvm topolvm/topolvm
+
+image:
+  # image.repository -- TopoLVM image repository to use.
+  repository: ghcr.io/topolvm/topolvm-with-sidecar
+
+  # image.tag -- TopoLVM image tag to use.
+  # @default -- `{{ .Chart.AppVersion }}`
+  tag: dev-attach # 0.18.1
+
+  # image.pullPolicy -- TopoLVM image pullPolicy.
+  pullPolicy:  # Always
+
+  csi:
+    # image.csi.csiAttacher -- Specify csi-attacher image.
+    # If not specified, `ghcr.io/topolvm/topolvm-with-sidecar:{{ .Values.image.tag }}` will be used.
+    csiAttacher: registry.k8s.io/sig-storage/csi-attacher:v4.5.1
+
+lvmd:
+  # lvmd.deviceClasses -- Specify the device-class settings.
+  deviceClasses:
+    - name: ssd
+      volume-group: myvg1
+      default: true
+      spare-gb: 10
+
+
+  # lvmd.nodeSelector -- Specify nodeSelector.
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+  nodeSelector:
+    instance.hetzner.cloud/is-root-server: "true"
+
+# CSI node service
+node:
+  # node.nodeSelector -- Specify nodeSelector.
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+  nodeSelector:
+    instance.hetzner.cloud/is-root-server: "true"
+
+# CSI controller service
+controller:
+  # controller.replicaCount -- Number of replicas for CSI controller service.
+  replicaCount: 1 # during development
+
+  nodeFinalize:
+    # controller.nodeFinalize.skipped -- Skip automatic cleanup of PhysicalVolumeClaims when a Node is deleted.
+    skipped: true
