@@ -1,26 +1,8 @@
-# to start topolvm
-#
-# kubectl create namespace topolvm-system
-#
-## from https://github.com/topolvm/topolvm/blob/main/docs/getting-started.md#install-instructions
-# kubectl label namespace topolvm-system topolvm.io/webhook=ignore
-# kubectl label namespace kube-system topolvm.io/webhook=ignore
-#
-## install cert-manager
-# helm repo add jetstack https://charts.jetstack.io --force-update
-# helm repo update
-# kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.crds.yaml
-# helm install \
-#  cert-manager jetstack/cert-manager \
-#  --namespace cert-manager \
-#  --create-namespace \
-#  --version v1.14.5 \
-##
-# helm install -f values.yaml --namespace=topolvm-system topolvm topolvm/topolvm
+# Docs are in https://github.com/syself/csi-topolvm/pull/3
 
 image:
   # image.repository -- TopoLVM image repository to use.
-  repository: ghcr.io/topolvm/topolvm-with-sidecar
+  repository: ghcr.io/syself/csi-topolvm-with-sidecar
 
   # image.tag -- TopoLVM image tag to use.
   # @default -- `{{ .Chart.AppVersion }}`
