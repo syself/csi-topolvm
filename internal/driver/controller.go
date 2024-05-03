@@ -114,6 +114,40 @@ func (s *controllerServer) ControllerExpandVolume(ctx context.Context, req *csi.
 	return s.server.ControllerExpandVolume(ctx, req)
 }
 
+func (s *controllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
+	ctrlLogger.Info("######################### syself ControllerPublishVolume()",
+		"ControllerPublishVolumeRequest", req,
+		"node", req.NodeId,
+		"volume", req.VolumeId,
+		"context", req.VolumeContext,
+		"context+v", fmt.Sprintf("%+v", req.VolumeContext),
+	)
+
+	if req.VolumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "missing volume id")
+	}
+	if req.NodeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "missing node id")
+	}
+	if req.VolumeCapability == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing volume capabilities")
+	}
+
+	resp := &csi.ControllerPublishVolumeResponse{}
+	return resp, nil
+}
+
+func (s *controllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
+	ctrlLogger.Info("######################### syself ControllerUnpublishVolume()",
+		"ControllerUnpublishVolumeRequest", req,
+		"node", req.NodeId,
+		"volume", req.VolumeId)
+	if req.VolumeId == "" {
+		return nil, status.Error(codes.InvalidArgument, "invalid volume id")
+	}
+	return &csi.ControllerUnpublishVolumeResponse{}, nil
+}
+
 // controllerServerNoLocked implements csi.ControllerServer.
 // It does not take any lock, gRPC calls may be interleaved.
 // Therefore, must not use it directly.
@@ -257,7 +291,6 @@ func (s controllerServerNoLocked) CreateVolume(ctx context.Context, req *csi.Cre
 			// - https://github.com/kubernetes-csi/csi-test/blob/6738ab2206eac88874f0a3ede59b40f680f59f43/pkg/sanity/controller.go#L404-L428
 			ctrlLogger.Info("decide node because accessibility_requirements not found")
 			nodeName, capacity, err := s.nodeService.GetMaxCapacity(ctx, deviceClass)
-
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get max capacity node %v", err)
 			}
@@ -600,6 +633,7 @@ func (s controllerServerNoLocked) GetCapacity(ctx context.Context, req *csi.GetC
 func (s controllerServerNoLocked) ControllerGetCapabilities(context.Context, *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	capabilities := []csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
+		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 		csi.ControllerServiceCapability_RPC_GET_CAPACITY,
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
