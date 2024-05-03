@@ -1,0 +1,29 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: topolvm-provisioner
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: netshoot-pod
+spec:
+  containers:
+  - name: netshoot
+    image: nicolaka/netshoot
+    command: ["sleep"]
+    args: ["infinity"]
+    volumeMounts:
+    - mountPath: /data
+      name: volume
+  volumes:
+  - name: volume
+    persistentVolumeClaim:
+      claimName: my-pvc
